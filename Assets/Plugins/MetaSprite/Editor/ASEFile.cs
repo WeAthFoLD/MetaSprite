@@ -6,6 +6,8 @@ using System;
 using System.Text;
 using System.IO.Compression;
 
+using MetaSprite.Internal;
+
 namespace MetaSprite {
 
 public enum BlendMode {
@@ -35,6 +37,15 @@ public class ASEFile {
     public List<Frame> frames = new List<Frame>();
     public List<Layer> layers = new List<Layer>();
     public List<FrameTag> frameTags = new List<FrameTag>();
+
+    public Layer FindLayer(int index) {
+        for (int i = 0; i < layers.Count; ++i) {
+            var layer = layers[i];
+            if (layer.index == index)
+                return layer;
+        }
+        return null;
+    }
 }
 
 public class Frame {
@@ -49,10 +60,70 @@ public class Layer: UserDataAcceptor {
     public float opacity;
     public string layerName;
     public string userData { get; set; }
+    public LayerType type;
+
+    // --- META
+
+    /// If is metadata, the action name of the layer
+    public string actionName { get; internal set; }
+
+    internal readonly List<LayerParam> parameters = new List<LayerParam>();
+
+    public int ParamCount {
+        get {
+            return parameters.Count;
+        }
+    }
+
+    public int GetParamInt(int index) {
+        return (int) CheckParamType(index, LayerParamType.Number).numberValue;
+    }
+
+    public float GetParamFloat(int index) {
+        return (float) CheckParamType(index, LayerParamType.Number).numberValue;
+    }
+
+    public string GetParamString(int index) {
+        return CheckParamType(index, LayerParamType.String).stringValue;
+    }
+
+    public LayerParamType GetParamType(int index) {
+        if (parameters.Count <= index) {
+            return LayerParamType.None;
+        }
+        return parameters[index].type;
+    }
+
+    LayerParam CheckParamType(int index, LayerParamType type) {
+        if (parameters.Count <= index) {
+            throw new Exception("No parameter #" + index);
+        }
+        var par = parameters[index];
+        if (par.type != type) {
+            throw new Exception(string.Format("Type mismatch at parameter #{0}, expected {1}, got {2}",
+                index, type, par.type));
+        }
+        return par;
+    }
+
 }
 
 internal enum CelType {
     Raw, Linked, Compressed
+}
+
+public enum LayerType {
+    Content, Meta
+}
+
+public enum LayerParamType {
+    None, String, Number
+}
+
+public class LayerParam {
+    public LayerParamType type;
+    public double numberValue;
+    public string stringValue;
 }
 
 public class Cel: UserDataAcceptor {
@@ -174,8 +245,13 @@ public static class ASEParser {
 
                         layer.layerName = reader.ReadUTF8();
 
-                        if (layerType == 0 && layer.visible) {
+                        if (layerType == 0 && layer.visible && !layer.layerName.StartsWith("//")) {
                             layer.index = readLayerIndex;
+                            layer.type = layer.layerName.StartsWith("@") ? LayerType.Meta : LayerType.Content;
+                            if (layer.type == LayerType.Meta) {
+                                MetaLayerParser.Parse(layer);
+                            }
+
                             file.layers.Add(layer);
                         }
 
@@ -215,7 +291,8 @@ public static class ASEParser {
                             } break;
                         }
 
-                        frame.cels.Add(cel.layerIndex, cel);
+                        if (file.FindLayer(cel.layerIndex) != null)
+                            frame.cels.Add(cel.layerIndex, cel);
 
                         lastUserdataAcceptor = cel;
 
@@ -364,6 +441,149 @@ public static class ASEParser {
     static void _Assert(bool expression, string msg) {
         if (!expression)
             _Error(msg);
+    }
+
+}
+
+public static class MetaLayerParser {
+    class TokenType {
+        readonly string id;
+
+        public TokenType(string _id) { id = _id; }
+
+        public override string ToString() {
+            return id;
+        }
+    }
+
+    static readonly TokenType
+        TKN_STRING = new TokenType("string"),
+        TKN_NUMBER = new TokenType("number"),
+        TKN_ID = new TokenType("id"),
+        TKN_LEFT = new TokenType("left_bracket"),
+        TKN_RIGHT = new TokenType("right_bracket"),
+        TKN_COMMA = new TokenType("comma"),
+        TKN_SPACE = new TokenType("space");
+
+    static readonly TokenDefinition[] defs;
+
+    static MetaLayerParser() {
+        defs = new TokenDefinition[] {
+            new TokenDefinition(@"""[^""]*""", TKN_STRING),
+            new TokenDefinition(@"([-+]?\d+\.\d+([eE][-+]?\d+)?)|([-+]?\d+)", TKN_NUMBER),
+            new TokenDefinition(@"[a-zA-Z0-9\_\-]+", TKN_ID),
+            new TokenDefinition(@"\,", TKN_COMMA),
+            new TokenDefinition(@"\(", TKN_LEFT),
+            new TokenDefinition(@"\)", TKN_RIGHT),
+            new TokenDefinition(@"\s*", TKN_SPACE)
+        };
+    }
+
+    public static void Parse(Layer layer) {
+        var reader = new StringReader(layer.layerName.Substring(1));
+        var lexer = new Lexer(reader, defs);
+        _Parse(lexer, layer);
+    }
+
+    static void _Parse(Lexer lexer, Layer layer) {
+        layer.actionName = _Expect(lexer, TKN_ID);
+
+        if (!_SkipSpaces(lexer)) {
+            return;
+        }
+
+        if (lexer.Token != TKN_LEFT) {
+            _ErrorUnexpected(lexer, TKN_LEFT);
+        }
+
+        while (true) {
+            if (!_SkipSpaces(lexer)) {
+                _ErrorEOF(lexer, TKN_RIGHT, TKN_NUMBER, TKN_STRING);
+            }
+
+            bool isParam = false;
+            if (lexer.Token == TKN_STRING) {
+                var param = new LayerParam();
+                param.type = LayerParamType.String;
+                param.stringValue = lexer.TokenContents.Substring(1, lexer.TokenContents.Length - 2);
+                layer.parameters.Add(param);
+                isParam = true;
+            } else if (lexer.Token == TKN_NUMBER) {
+                var param = new LayerParam();
+                param.type = LayerParamType.Number;
+                param.numberValue = double.Parse(lexer.TokenContents);
+                layer.parameters.Add(param);
+                isParam = true;
+            } else if (lexer.Token == TKN_RIGHT) {
+                break;
+            } else {
+                _ErrorUnexpected(lexer, TKN_RIGHT, TKN_NUMBER, TKN_STRING);
+            }
+
+            if (isParam) {
+                if (!_SkipSpaces(lexer)) {
+                    _ErrorEOF(lexer, TKN_COMMA, TKN_RIGHT);
+                }
+                if (lexer.Token == TKN_RIGHT) {
+                    break;
+                }
+                if (lexer.Token != TKN_COMMA) {
+                    _ErrorUnexpected(lexer, TKN_COMMA, TKN_RIGHT);
+                }
+            }
+        }
+        
+        if (_SkipSpaces(lexer)) {
+            Debug.LogWarning("Invalid content after layer definition finished: " + lexer.Token + "/" + lexer.TokenContents);
+        }
+
+    }
+
+    static bool _SkipSpaces(Lexer lexer) {
+        while (true) {
+            var hasMore = lexer.Next();
+            if (!hasMore || lexer.Token != TKN_SPACE) {
+                return hasMore;
+            }
+        }
+    }
+
+    static string _Expect(Lexer lexer, TokenType tokenType) {
+        var hasMore = _SkipSpaces(lexer);
+
+        if (!hasMore) {
+            throw _ErrorEOF(lexer, tokenType);
+        } else {
+            if (lexer.Token != tokenType) {
+                _ErrorUnexpected(lexer, tokenType);
+            }
+            return lexer.TokenContents;
+        }
+    }
+
+    static Exception _ErrorEOF(Lexer lexer, params TokenType[] expected) {
+        throw _Error(lexer, string.Format("Expected {0}, found EOF", _TokenTypeStr(expected)));
+    }
+
+    static Exception _ErrorUnexpected(Lexer lexer, params TokenType[] expected) {
+        throw _Error(lexer, string.Format("Expected {0}, found {1}:{2}", _TokenTypeStr(expected), lexer.Token, lexer.TokenContents));
+    }
+
+    static string _TokenTypeStr(TokenType[] expected) {
+        string typeStr = "";
+        for (int i = 0; i < expected.Length; ++i) {
+            typeStr += expected[i];
+            if (i != expected.Length - 1) {
+                typeStr += " or ";
+            } else {
+                typeStr += " ";
+            }
+        }
+        return typeStr;
+    }
+
+    static Exception _Error(Lexer lexer, string msg) {
+        throw new Exception(msg);
     }
 
 }
