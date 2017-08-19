@@ -6,6 +6,8 @@ using UnityEditor;
 using System.Linq;
 using System.IO;
 
+using MetaSprite.Internal;
+
 namespace MetaSprite {
 
 public static class ImportMenu {
@@ -16,7 +18,9 @@ public static class ImportMenu {
             var path = AssetDatabase.GetAssetPath(asset);
             var bytes = File.ReadAllBytes(path);
 
-            ASEParser.Parse(bytes);
+            var file = ASEParser.Parse(bytes);
+
+            AtlasGenerator.GenerateAtlas(file, "Assets/test.png", 48);
         }
     }
 

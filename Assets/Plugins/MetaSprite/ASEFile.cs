@@ -71,17 +71,17 @@ public class Cel: UserDataAcceptor {
     internal Color[] colorBuffer;
 
     // Get the color of the cel in cel space
-    public Color GetColorRaw(int x, int y) {
-        return colorBuffer[y * height + x];
+    public Color GetPixelRaw(int x, int y) {
+        return colorBuffer[y * width + x];
     }
 
     // Get the color of the cel in sprite image space
-    public Color GetColor(int x, int y) {
+    public Color GetPixel(int x, int y) {
         var relx = x - this.x;
         var rely = y - this.y;
         if (0 <= relx && relx < width &&
             0 <= rely && rely < height) {
-            return GetColorRaw(relx, rely);
+            return GetPixelRaw(relx, rely);
         } else {
             return Opaque;
         }
