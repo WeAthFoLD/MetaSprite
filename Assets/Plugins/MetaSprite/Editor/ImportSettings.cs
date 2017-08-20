@@ -36,6 +36,12 @@ public class ImportSettings : ScriptableObject {
 
     public string animControllerOutputPath;
 
+    public Vector2 PivotRelativePos {
+        get {
+            return alignment.GetRelativePos(customPivot);
+        }
+    }
+
 }
 
 [CustomEditor(typeof(ImportSettings))]

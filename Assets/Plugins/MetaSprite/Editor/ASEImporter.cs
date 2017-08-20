@@ -7,6 +7,7 @@ using UnityEditor.Animations;
 using UnityEngine;
 
 using MetaSprite.Internal;
+using System.Linq;
 
 namespace MetaSprite {
 
@@ -30,6 +31,8 @@ public class ImportContext {
 
 public static class ASEImporter {
 
+    static readonly Dictionary<string, MetaLayerProcessor> layerProcessors = new Dictionary<string, MetaLayerProcessor>();
+
     enum Stage {
         LoadFile,
         GenerateAtlas,
@@ -47,8 +50,31 @@ public static class ASEImporter {
     }
 
     public static void Refresh() {
-
+        layerProcessors.Clear();
+        var processorTypes = FindAllTypes(typeof(MetaLayerProcessor));
+        // Debug.Log("Found " + processorTypes.Length + " layer processor(s).");
+        foreach (var type in processorTypes) {
+            try {
+                var instance = (MetaLayerProcessor) type.GetConstructor(new Type[0]).Invoke(new object[0]);
+                if (layerProcessors.ContainsKey(instance.actionName)) {
+                    Debug.LogError(string.Format("Duplicate processor with name {0}: {1}", instance.actionName, instance));
+                } else {
+                    layerProcessors.Add(instance.actionName, instance);
+                }
+            } catch (Exception ex) {
+                Debug.LogError("Can't instantiate meta processor " + type);
+                Debug.LogException(ex);
+            }
+        }
     }
+
+    static Type[] FindAllTypes(Type interfaceType) {
+        var types = System.Reflection.Assembly.GetExecutingAssembly()
+            .GetTypes();
+        return types.Where(type => type.IsClass && interfaceType.IsAssignableFrom(type))
+                    .ToArray();
+    }
+
 
     public static void Import(DefaultAsset defaultAsset, ImportSettings settings) {
 
@@ -86,6 +112,20 @@ public static class ASEImporter {
 
         ImportStage(context, Stage.GenerateController);
         GenerateAnimController(context);
+
+        ImportStage(context, Stage.InvokeMetaLayerProcessor);
+        context.file.layers
+            .Where(layer => layer.type == LayerType.Meta)
+            .ToList()
+            .ForEach(layer => {
+                MetaLayerProcessor processor;
+                layerProcessors.TryGetValue(layer.actionName, out processor);
+                if (processor == null) {
+                    Debug.LogWarning(string.Format("No processor for meta layer {0}", layer.layerName));
+                } else {
+                    processor.Process(context, layer);
+                }
+            });
 
         ImportEnd(context);
     }
@@ -173,9 +213,8 @@ public static class ASEImporter {
 
         var layer = controller.layers[0];
         var stateMap = new Dictionary<string, AnimatorState>();
-        foreach (var state in layer.stateMachine.states) {
-            stateMap.Add(state.state.name, state.state);
-        }
+        PopulateStateTable(stateMap, layer.stateMachine);
+        
         foreach (var pair in ctx.generatedClips) {
             var frameTag = pair.Key;
             var clip = pair.Value;
@@ -190,6 +229,21 @@ public static class ASEImporter {
         }
 
         EditorUtility.SetDirty(controller);
+    }
+
+    static void PopulateStateTable(Dictionary<string, AnimatorState> table, AnimatorStateMachine machine) {
+        foreach (var state in machine.states) {
+            var name = state.state.name;
+            if (table.ContainsKey(name)) {
+                Debug.LogWarning("Duplicate state with name " + name + " in animator controller. Behaviour is undefined.");
+            } else {
+                table.Add(name, state.state);
+            }
+        }
+
+        foreach (var subMachine in machine.stateMachines) {
+            PopulateStateTable(table, subMachine.stateMachine);
+        }
     }
 
 }

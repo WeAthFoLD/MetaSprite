@@ -82,19 +82,7 @@ public static class AtlasGenerator {
             }
         }
 
-        Vector2 oldPivotNorm = Vector2.zero;
-        switch (settings.alignment) {
-            case SpriteAlignment.BottomCenter: oldPivotNorm = new Vector2(0.5f, 0);    break;
-            case SpriteAlignment.BottomLeft:   oldPivotNorm = new Vector2(0f, 0);      break;
-            case SpriteAlignment.BottomRight:  oldPivotNorm = new Vector2(1f, 0);      break;
-            case SpriteAlignment.Center:       oldPivotNorm = new Vector2(0.5f, 0.5f); break;
-            case SpriteAlignment.Custom:       oldPivotNorm = settings.customPivot;    break;
-            case SpriteAlignment.LeftCenter:   oldPivotNorm = new Vector2(0, 0.5f);    break;
-            case SpriteAlignment.RightCenter:  oldPivotNorm = new Vector2(1, 0.5f);    break;
-            case SpriteAlignment.TopCenter:    oldPivotNorm = new Vector2(0.5f, 1f);   break;
-            case SpriteAlignment.TopLeft:      oldPivotNorm = new Vector2(0.0f, 1f);   break;
-            case SpriteAlignment.TopRight:     oldPivotNorm = new Vector2(1.0f, 1f);   break;
-        }
+        Vector2 oldPivotNorm = settings.PivotRelativePos;
 
         var metaList = new List<SpriteMetaData>();
 
@@ -223,7 +211,7 @@ public static class AtlasGenerator {
         public FrameImage(int width, int height) {
             this.width = width;
             this.height = height;
-            data = new Color[width * height];
+            data = new Color[this.width * this.height];
         }
 
         public Color GetPixel(int x, int y) {
