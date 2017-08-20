@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -29,22 +30,40 @@ public class ImportContext {
 
 public static class ASEImporter {
 
+    enum Stage {
+        LoadFile,
+        GenerateAtlas,
+        GenerateClips,
+        GenerateController,
+        InvokeMetaLayerProcessor
+    }
+
+    static float GetProgress(this Stage stage) {
+        return (float) (int) stage / Enum.GetValues(typeof(Stage)).Length;
+    }
+
+    static string GetDisplayString(this Stage stage) {
+        return stage.ToString();
+    }
+
     public static void Refresh() {
 
     }
 
     public static void Import(DefaultAsset defaultAsset, ImportSettings settings) {
+
         var path = AssetDatabase.GetAssetPath(defaultAsset);
 
-        var file = ASEParser.Parse(File.ReadAllBytes(path));
-
         var context = new ImportContext {
-            file = file,
+            // file = file,
             settings = settings,
             fileDirectory = Path.GetDirectoryName(path),
             fileName = Path.GetFileName(path),
             fileNameNoExt = Path.GetFileNameWithoutExtension(path)
         };
+
+        ImportStage(context, Stage.LoadFile);
+        context.file = ASEParser.Parse(File.ReadAllBytes(path));        
 
         context.atlasPath = Path.Combine(settings.atlasOutputDirectory, context.fileNameNoExt + ".png");
 
@@ -59,11 +78,24 @@ public static class ASEImporter {
             Directory.CreateDirectory(Path.GetDirectoryName(context.animControllerPath));
         //
 
+        ImportStage(context, Stage.GenerateAtlas);
         AtlasGenerator.GenerateAtlas(context);
 
+        ImportStage(context, Stage.GenerateClips);
         GenerateAnimClips(context);
 
+        ImportStage(context, Stage.GenerateController);
         GenerateAnimController(context);
+
+        ImportEnd(context);
+    }
+
+    static void ImportStage(ImportContext ctx, Stage stage) {
+        EditorUtility.DisplayProgressBar("Importing " + ctx.fileName, stage.GetDisplayString(), stage.GetProgress());
+    }
+
+    static void ImportEnd(ImportContext ctx) {
+        EditorUtility.ClearProgressBar();
     }
 
     static void GenerateAnimClips(ImportContext ctx) {
