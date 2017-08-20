@@ -12,7 +12,7 @@ using EGL = UnityEditor.EditorGUILayout;
 namespace MetaSprite {
 
 public enum AnimControllerOutputPolicy {
-    Skip, CreateOrOverride, Override
+    Skip, CreateOrOverride
 }
 
 [CreateAssetMenu(menuName = "ASE Import Settings")]
@@ -35,8 +35,6 @@ public class ImportSettings : ScriptableObject {
     public AnimControllerOutputPolicy controllerPolicy;
 
     public string animControllerOutputPath;
-
-    public AnimatorController overrideController;
 
 }
 
@@ -72,9 +70,7 @@ public class ImportSettingsEditor : Editor {
         settings.controllerPolicy = (AnimControllerOutputPolicy) EGL.EnumPopup("Anim Controller Policy", settings.controllerPolicy);
         if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride) {
             settings.animControllerOutputPath = PathSelection("Anim Controller Directory", settings.animControllerOutputPath);
-        } else if (settings.controllerPolicy == AnimControllerOutputPolicy.Override) {
-            settings.overrideController = (AnimatorController) EGL.ObjectField("Animator To Override", settings.overrideController, typeof(AnimatorController), allowSceneObjects: false);
-        } 
+        }
 
         if (EditorGUI.EndChangeCheck()) {
             EditorUtility.SetDirty(settings);

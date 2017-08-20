@@ -22,7 +22,11 @@ public static class AtlasGenerator {
         public List<PackPos> positions;
     }
 
-    public static void GenerateAtlas(ASEFile file, string path, ImportSettings settings) {
+    public static void GenerateAtlas(ImportContext ctx) {
+        var file = ctx.file;
+        var settings = ctx.settings;
+        var path = ctx.atlasPath;
+
         var images = file.frames    
             .Select(frame => {
                 var cels = frame.cels.Values.OrderBy(it => it.layerIndex).ToList();
@@ -122,9 +126,6 @@ public static class AtlasGenerator {
 
         var bytes = texture.EncodeToPNG();
 
-        var directory = Path.GetDirectoryName(path);
-        Directory.CreateDirectory(directory);
-
         File.WriteAllBytes(path, bytes);
 
         // Import texture
@@ -142,6 +143,8 @@ public static class AtlasGenerator {
 
         EditorUtility.SetDirty(importer);
         importer.SaveAndReimport();
+
+        ctx.generatedSprites = GetAtlasSprites(path);
     }
 
     /// Pack the atlas
@@ -189,6 +192,19 @@ public static class AtlasGenerator {
             imageSize = size,
             positions = posList
         };
+    }
+
+    static List<Sprite> GetAtlasSprites(string path) {
+        // Get frames of the atlas
+        var frameSprites = new List<Sprite>(); 
+        var assets = AssetDatabase.LoadAllAssetsAtPath(path);
+        foreach (var asset in assets) {
+            if (asset is Sprite) {
+                frameSprites.Add((Sprite) asset);
+            }
+        }
+        
+        return frameSprites;
     }
 
     class FrameImage {

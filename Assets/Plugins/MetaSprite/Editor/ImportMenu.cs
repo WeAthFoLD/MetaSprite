@@ -65,7 +65,7 @@ public static class ImportMenu {
 
     static string GetImportSettingsPath(DefaultAsset asset) {
         var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
-        var path = "Assets/Config/ASEImport/FileSettings/" + guid + ".asset";
+        var path = "Assets/Config/MetaSprite/FileSettings/" + guid + ".asset";
         return path;
     }
 
@@ -144,7 +144,10 @@ public static class ImportMenu {
         }
 
         void OnGUI() {
-            settings = (ImportSettings) EGL.ObjectField("Use Settings", settings, typeof(ImportSettings), false);
+            EGL.LabelField("Use Settings");
+            settings = (ImportSettings) EGL.ObjectField(settings, typeof(ImportSettings), false);
+
+            EGL.Space();
 
             if (settings && CenteredButton("OK")) {
                 foreach (var path in paths) {

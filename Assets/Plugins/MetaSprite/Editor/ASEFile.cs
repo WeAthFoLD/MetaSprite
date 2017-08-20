@@ -50,6 +50,7 @@ public class ASEFile {
 
 public class Frame {
     public int duration;
+    public int frameID;
     public Dictionary<int, Cel> cels = new Dictionary<int, Cel>();
 }
 
@@ -166,6 +167,7 @@ internal interface UserDataAcceptor {
 public class FrameTag {
     public int from, to;
     public string name;
+    public readonly HashSet<string> properties = new HashSet<string>();
 }
 
 public static class ASEParser {
@@ -212,6 +214,7 @@ public static class ASEParser {
 
             for (int i = 0; i < frameCount; ++i) {
                 var frame = new Frame();
+                frame.frameID = i;
 
                 reader.ReadDWord(); // frameBytes
                 _CheckMagicNumber(reader.ReadWord(), 0xF1FA);
@@ -313,6 +316,30 @@ public static class ASEParser {
                             reader.ReadByte();
 
                             frameTag.name = reader.ReadUTF8();
+
+                            if (frameTag.name.StartsWith("//")) { // Commented tags are ignored
+                                continue;
+                            }
+
+                            var originalName = frameTag.name;
+
+                            var tagIdx = frameTag.name.IndexOf('#');
+                            var nameInvalid = false;
+                            if (tagIdx != -1) {
+                                frameTag.name = frameTag.name.Substring(0, tagIdx).Trim();
+                                var possibleProperties = originalName.Substring(tagIdx).Split(' ');
+                                foreach (var possibleProperty in possibleProperties) {
+                                    if (possibleProperty.Length > 1 && possibleProperty[0] == '#') {
+                                        frameTag.properties.Add(possibleProperty.Substring(1));
+                                    } else {
+                                        nameInvalid = true;
+                                    }
+                                }
+                            }
+
+                            if (nameInvalid) {
+                                Debug.LogWarning("Invalid name: " + originalName);
+                            }
 
                             file.frameTags.Add(frameTag);
                         }
