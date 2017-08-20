@@ -18,6 +18,5 @@ MonoBehaviour:
   spriteTarget: _Sprite
   atlasOutputDirectory: Assets/Test/Output/Atlas
   clipOutputDirectory: Assets/Test/Output/Clip
-  controllerPolicy: 0
-  animControllerOutputPath: 
-  overrideController: {fileID: 0}
+  controllerPolicy: 1
+  animControllerOutputPath: Assets/Test/Output
