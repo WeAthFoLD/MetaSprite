@@ -7,13 +7,21 @@ MetaSprite is currently in early developement stage.
 # Feature overview
 
 * Doesn't require external aseprite executable to run
-* Efficient atlas packing algorithm
+* Blazing fast
+* Efficient atlas packing
 * Simple workflow, only requiring right-clicking on the sprite file and choose Import
 * Extensive metadata support
   * Commented (ignored) Layers/Tags
   * Manipulate colliders/events/positions/sprite pivots using image data
   * Specify clip looping using frame tag properties
   * ...
+* Write custom MetaLayerProcessor for extended functionality
+
+# Installation & Usage
+
+Check out [releases](https://github.com/WeAthFoLD/MetaSprite/releases) for unitypackage downloads. You can copy the `Assets/Plugins` folder of the repo into your unity project's asset folder for same effect.
+
+See [wiki](https://github.com/WeAthFoLD/MetaSprite/wiki) for explanation of importing, import settings, meta layers and other importer features.
 
 # Credits
 
