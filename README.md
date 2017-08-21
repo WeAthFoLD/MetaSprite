@@ -36,7 +36,4 @@ If this plugin helped you in your project or you want to support the developemen
 
 PayPal: [Link](https://paypal.me/weathfold)
 
-
-AliPay:
-
-<img src="Images/alipay-donation-qrcode.png" width=300 height=300/>
+AliPay: [Link](https://github.com/WeAthFoLD/MetaSprite/blob/master/Images/alipay-donation-qrcode.png)
