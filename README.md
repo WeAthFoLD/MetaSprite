@@ -29,3 +29,14 @@ See [wiki](https://github.com/WeAthFoLD/MetaSprite/wiki) for explanation of impo
 * [talecrafter](https://github.com/talecrafter)'s [AnimationImporter](https://github.com/talecrafter/AnimationImporter), where the code of this project is initially based from
 
 [aseprite]: https://aseprite.org
+
+# Donation
+
+If this plugin helped you in your project or you want to support the developement, consider buying me a cup of coffee (°∀°)ﾉ
+
+PayPal: [Link](https://paypal.me/weathfold)
+
+
+AliPay:
+
+<img src="Images/alipay-donation-qrcode.png" width=300 height=300/>
