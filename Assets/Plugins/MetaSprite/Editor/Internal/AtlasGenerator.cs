@@ -99,7 +99,7 @@ public static class AtlasGenerator {
             }
 
             var metadata = new SpriteMetaData();
-            metadata.name = "atlas_" + i;
+            metadata.name = ctx.fileNameNoExt + "_" + i;
             metadata.alignment = (int) SpriteAlignment.Custom;
             metadata.rect = new Rect(pos.x, pos.y, image.finalWidth, image.finalHeight);
             
