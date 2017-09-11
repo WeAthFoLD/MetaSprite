@@ -79,8 +79,6 @@ public static class ImportMenu {
 
             pluginPath_ = Path.GetDirectoryName(Path.GetDirectoryName(scriptPath));
 
-            Debug.Log(scriptPath + " -> " + pluginPath_);            
-
             return pluginPath_;
         }
     }
