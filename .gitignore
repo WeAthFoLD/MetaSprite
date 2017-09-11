@@ -33,3 +33,8 @@ sysinfo.txt
 # Builds
 *.apk
 *.unitypackage
+
+# Plugin test / Auto generated stuffs
+Assets/Plugins/MetaSprite/Editor/FileSettings/
+Assets/Plugins/MetaSprite/Editor/FileSettings.meta
+Assets/Test/

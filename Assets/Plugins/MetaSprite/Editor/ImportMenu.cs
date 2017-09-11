@@ -63,9 +63,31 @@ public static class ImportMenu {
         return GetSelectedAseprites().Length > 0;
     }
 
+    static string pluginPath_;
+
+    static string pluginPath {
+        get {
+            if (pluginPath_ != null) {
+                return pluginPath_;
+            }
+            
+            var testInstance = ScriptableObject.CreateInstance<ProjectTestInstance>();
+            var script = MonoScript.FromScriptableObject(testInstance);
+            var scriptPath = AssetDatabase.GetAssetPath(script);
+
+            ScriptableObject.DestroyImmediate(testInstance, true);
+
+            pluginPath_ = Path.GetDirectoryName(Path.GetDirectoryName(scriptPath));
+
+            Debug.Log(scriptPath + " -> " + pluginPath_);            
+
+            return pluginPath_;
+        }
+    }
+
     static string GetImportSettingsPath(DefaultAsset asset) {
         var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
-        var path = "Assets/Config/MetaSprite/FileSettings/" + guid + ".asset";
+        var path = pluginPath + "/FileSettings/" + guid + ".asset";
         return path;
     }
 
