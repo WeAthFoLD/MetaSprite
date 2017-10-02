@@ -46,6 +46,11 @@ public static class AtlasGenerator {
                                 var lastColor = image.GetPixel(x, y);
                                 // blending
                                 var color = Color.Lerp(lastColor, c, c.a);
+                                color.a = lastColor.a + c.a * (1 - lastColor.a);
+                                color.r /= color.a;
+                                color.g /= color.a;
+                                color.b /= color.a;
+
                                 image.SetPixel(x, y, color);
 
                                 // expand image area
@@ -212,6 +217,9 @@ public static class AtlasGenerator {
             this.width = width;
             this.height = height;
             data = new Color[this.width * this.height];
+            for (int i = 0; i < data.Length; ++i) {
+                data[i].a = 0;
+            }
         }
 
         public Color GetPixel(int x, int y) {
