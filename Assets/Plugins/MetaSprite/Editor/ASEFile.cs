@@ -371,6 +371,18 @@ public static class ASEParser {
                 file.frames.Add(frame);
             }
 
+            // Post process: calculate pixel alpha
+            for (int f = 0; f < file.frames.Count; ++f) {
+                var frame = file.frames[f];
+                foreach (var cel in frame.cels.Values) {
+                    if (cel.type != CelType.Linked) {
+                        for(int i = 0; i < cel.colorBuffer.Length; ++i) {
+                            cel.colorBuffer[i].a *= cel.opacity * file.FindLayer(cel.layerIndex).opacity;
+                        }
+                    }
+                }
+            }
+
             // Post process: eliminate reference cels
             for (int f = 0; f < file.frames.Count; ++f) {
                 var frame = file.frames[f];

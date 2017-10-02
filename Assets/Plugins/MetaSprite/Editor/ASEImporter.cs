@@ -88,44 +88,48 @@ public static class ASEImporter {
             fileNameNoExt = Path.GetFileNameWithoutExtension(path)
         };
 
-        ImportStage(context, Stage.LoadFile);
-        context.file = ASEParser.Parse(File.ReadAllBytes(path));        
+        try {
+            ImportStage(context, Stage.LoadFile);
+            context.file = ASEParser.Parse(File.ReadAllBytes(path));        
 
-        context.atlasPath = Path.Combine(settings.atlasOutputDirectory, context.fileNameNoExt + ".png");
+            context.atlasPath = Path.Combine(settings.atlasOutputDirectory, context.fileNameNoExt + ".png");
 
-        if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride)
-            context.animControllerPath = settings.animControllerOutputPath + "/" + settings.baseName + ".controller";
-        context.animClipDirectory = settings.clipOutputDirectory;
+            if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride)
+                context.animControllerPath = settings.animControllerOutputPath + "/" + settings.baseName + ".controller";
+            context.animClipDirectory = settings.clipOutputDirectory;
 
-        // Create paths in advance
-        Directory.CreateDirectory(settings.atlasOutputDirectory);
-        Directory.CreateDirectory(context.animClipDirectory);
-        if (context.animControllerPath != null)
-            Directory.CreateDirectory(Path.GetDirectoryName(context.animControllerPath));
-        //
+            // Create paths in advance
+            Directory.CreateDirectory(settings.atlasOutputDirectory);
+            Directory.CreateDirectory(context.animClipDirectory);
+            if (context.animControllerPath != null)
+                Directory.CreateDirectory(Path.GetDirectoryName(context.animControllerPath));
+            //
 
-        ImportStage(context, Stage.GenerateAtlas);
-        AtlasGenerator.GenerateAtlas(context);
+            ImportStage(context, Stage.GenerateAtlas);
+            AtlasGenerator.GenerateAtlas(context);
 
-        ImportStage(context, Stage.GenerateClips);
-        GenerateAnimClips(context);
+            ImportStage(context, Stage.GenerateClips);
+            GenerateAnimClips(context);
 
-        ImportStage(context, Stage.GenerateController);
-        GenerateAnimController(context);
+            ImportStage(context, Stage.GenerateController);
+            GenerateAnimController(context);
 
-        ImportStage(context, Stage.InvokeMetaLayerProcessor);
-        context.file.layers
-            .Where(layer => layer.type == LayerType.Meta)
-            .ToList()
-            .ForEach(layer => {
-                MetaLayerProcessor processor;
-                layerProcessors.TryGetValue(layer.actionName, out processor);
-                if (processor == null) {
-                    Debug.LogWarning(string.Format("No processor for meta layer {0}", layer.layerName));
-                } else {
-                    processor.Process(context, layer);
-                }
-            });
+            ImportStage(context, Stage.InvokeMetaLayerProcessor);
+            context.file.layers
+                .Where(layer => layer.type == LayerType.Meta)
+                .ToList()
+                .ForEach(layer => {
+                    MetaLayerProcessor processor;
+                    layerProcessors.TryGetValue(layer.actionName, out processor);
+                    if (processor == null) {
+                        Debug.LogWarning(string.Format("No processor for meta layer {0}", layer.layerName));
+                    } else {
+                        processor.Process(context, layer);
+                    }
+                });
+        } catch (Exception e) {
+            Debug.LogException(e);
+        }
 
         ImportEnd(context);
     }
