@@ -114,6 +114,8 @@ public static class AtlasGenerator {
             var newPivotNorm = Vector2.Scale(newPivotTex, new Vector2(1.0f / image.finalWidth, 1.0f / image.finalHeight));
             metadata.pivot = newPivotNorm;
 
+            ctx.spriteCropPositions.Add(new Vector2(image.minx, file.height - image.maxy - 1));
+
             metaList.Add(metadata);
         }
 

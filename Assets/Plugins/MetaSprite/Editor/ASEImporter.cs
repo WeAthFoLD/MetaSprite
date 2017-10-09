@@ -25,6 +25,10 @@ public class ImportContext {
     public string animClipDirectory;
 
     public List<Sprite> generatedSprites = new List<Sprite>();
+
+    // The local texture coordinate for bottom-left point of each frame's crop rect, in Unity texture space.
+    public List<Vector2> spriteCropPositions = new List<Vector2>();
+
     public Dictionary<FrameTag, AnimationClip> generatedClips = new Dictionary<FrameTag, AnimationClip>();
 
 }
