@@ -88,6 +88,10 @@ public class Layer: UserDataAcceptor {
         return CheckParamType(index, LayerParamType.String).stringValue;
     }
 
+    public bool GetParamBool(int index) {
+        return CheckParamType(index, LayerParamType.Bool).boolValue;
+    }
+
     public LayerParamType GetParamType(int index) {
         if (parameters.Count <= index) {
             return LayerParamType.None;
@@ -118,13 +122,14 @@ public enum LayerType {
 }
 
 public enum LayerParamType {
-    None, String, Number
+    None, String, Number, Bool
 }
 
 public class LayerParam {
     public LayerParamType type;
     public double numberValue;
     public string stringValue;
+    public bool boolValue;
 }
 
 public class Cel: UserDataAcceptor {
@@ -502,7 +507,8 @@ public static class MetaLayerParser {
         TKN_LEFT = new TokenType("left_bracket"),
         TKN_RIGHT = new TokenType("right_bracket"),
         TKN_COMMA = new TokenType("comma"),
-        TKN_SPACE = new TokenType("space");
+        TKN_SPACE = new TokenType("space"),
+        TKN_BOOL = new TokenType("bool");
 
     static readonly TokenDefinition[] defs;
 
@@ -510,11 +516,12 @@ public static class MetaLayerParser {
         defs = new TokenDefinition[] {
             new TokenDefinition(@"""[^""]*""", TKN_STRING),
             new TokenDefinition(@"([-+]?\d+\.\d+([eE][-+]?\d+)?)|([-+]?\d+)", TKN_NUMBER),
+            new TokenDefinition(@"(true)|(false)", TKN_BOOL),
             new TokenDefinition(@"[a-zA-Z0-9\_\-]+", TKN_ID),
             new TokenDefinition(@"\,", TKN_COMMA),
             new TokenDefinition(@"\(", TKN_LEFT),
             new TokenDefinition(@"\)", TKN_RIGHT),
-            new TokenDefinition(@"\s*", TKN_SPACE)
+            new TokenDefinition(@"\s*", TKN_SPACE),
         };
     }
 
@@ -553,10 +560,16 @@ public static class MetaLayerParser {
                 param.numberValue = double.Parse(lexer.TokenContents);
                 layer.parameters.Add(param);
                 isParam = true;
+            } else if (lexer.Token == TKN_BOOL) {
+                var param = new LayerParam();
+                param.type = LayerParamType.Bool;
+                param.boolValue = bool.Parse(lexer.TokenContents);
+                layer.parameters.Add(param);
+                isParam = true;
             } else if (lexer.Token == TKN_RIGHT) {
                 break;
             } else {
-                _ErrorUnexpected(lexer, TKN_RIGHT, TKN_NUMBER, TKN_STRING);
+                _ErrorUnexpected(lexer, TKN_RIGHT, TKN_NUMBER, TKN_STRING, TKN_BOOL);
             }
 
             if (isParam) {
