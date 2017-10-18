@@ -22,10 +22,10 @@ public static class AtlasGenerator {
         public List<PackPos> positions;
     }
 
-    public static void GenerateAtlas(ImportContext ctx) {
+    public static List<Sprite> GenerateAtlas(ImportContext ctx, List<Layer> layers, string atlasPath) {
         var file = ctx.file;
         var settings = ctx.settings;
-        var path = ctx.atlasPath;
+        var path = atlasPath;
 
         var images = file.frames    
             .Select(frame => {
@@ -34,7 +34,7 @@ public static class AtlasGenerator {
 
                 foreach (var cel in cels) {
                     var layer = file.FindLayer(cel.layerIndex);
-                    if (layer.type == LayerType.Meta) continue;
+                    if (!layers.Contains(layer)) continue;
 
                     for (int cy = 0; cy < cel.height; ++cy) {
                         for (int cx = 0; cx < cel.width; ++cx) {
@@ -139,7 +139,7 @@ public static class AtlasGenerator {
         EditorUtility.SetDirty(importer);
         importer.SaveAndReimport();
 
-        ctx.generatedSprites = GetAtlasSprites(path);
+        return GetAtlasSprites(path);
     }
 
     /// Pack the atlas

@@ -4,11 +4,15 @@ using UnityEngine;
 
 namespace MetaSprite {
 
-public interface MetaLayerProcessor {
+public abstract class MetaLayerProcessor {
 
-    string actionName { get; }
+    public abstract string actionName { get; }
 
-    void Process(ImportContext ctx, Layer layer);
+    // The order of execution when importing an ase file. Higher order gets executed later.
+    public virtual int executionOrder { get { return 0; } }
+
+    public abstract void Process(ImportContext ctx, Layer layer);
+
 
 }
 

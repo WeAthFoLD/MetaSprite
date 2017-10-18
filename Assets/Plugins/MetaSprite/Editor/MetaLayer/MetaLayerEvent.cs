@@ -9,11 +9,11 @@ namespace MetaSprite {
 
 public class MetaLayerEvent : MetaLayerProcessor {
 
-    public string actionName {
+    public override string actionName {
         get { return "event"; }
     }
 
-    public void Process(ImportContext ctx, Layer layer) {
+    public override void Process(ImportContext ctx, Layer layer) {
         var eventFrames = new HashSet<int>();
         var file = ctx.file;
 

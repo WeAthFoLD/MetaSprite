@@ -8,7 +8,7 @@ using UnityEngine;
 namespace MetaSprite {
 
 public class MetaLayerPivot : MetaLayerProcessor {
-    public string actionName {
+    public override string actionName {
         get { return "pivot"; }
     }
 
@@ -17,7 +17,7 @@ public class MetaLayerPivot : MetaLayerProcessor {
         public Vector2 pivot;
     }
 
-    public void Process(ImportContext ctx, Layer layer) {
+    public override void Process(ImportContext ctx, Layer layer) {
         var pivots = new List<PivotFrame>();
 
         var file = ctx.file;

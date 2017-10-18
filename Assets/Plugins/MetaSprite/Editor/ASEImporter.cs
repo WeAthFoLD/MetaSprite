@@ -31,6 +31,8 @@ public class ImportContext {
 
     public Dictionary<FrameTag, AnimationClip> generatedClips = new Dictionary<FrameTag, AnimationClip>();
 
+    public Dictionary<string, List<Layer>> subImageLayers = new Dictionary<string, List<Layer>>();
+
 }
 
 public static class ASEImporter {
@@ -58,6 +60,7 @@ public static class ASEImporter {
         var processorTypes = FindAllTypes(typeof(MetaLayerProcessor));
         // Debug.Log("Found " + processorTypes.Length + " layer processor(s).");
         foreach (var type in processorTypes) {
+            if (type.IsAbstract) return;
             try {
                 var instance = (MetaLayerProcessor) type.GetConstructor(new Type[0]).Invoke(new object[0]);
                 if (layerProcessors.ContainsKey(instance.actionName)) {
@@ -77,6 +80,11 @@ public static class ASEImporter {
             .GetTypes();
         return types.Where(type => type.IsClass && interfaceType.IsAssignableFrom(type))
                     .ToArray();
+    }
+
+    struct LayerAndProcessor {
+        public Layer layer;
+        public MetaLayerProcessor processor;
     }
 
 
@@ -110,7 +118,9 @@ public static class ASEImporter {
             //
 
             ImportStage(context, Stage.GenerateAtlas);
-            AtlasGenerator.GenerateAtlas(context);
+            context.generatedSprites = AtlasGenerator.GenerateAtlas(context, 
+                context.file.layers.Where(it => it.type == LayerType.Content).ToList(),
+                context.atlasPath);
 
             ImportStage(context, Stage.GenerateClips);
             GenerateAnimClips(context);
@@ -121,14 +131,20 @@ public static class ASEImporter {
             ImportStage(context, Stage.InvokeMetaLayerProcessor);
             context.file.layers
                 .Where(layer => layer.type == LayerType.Meta)
-                .ToList()
-                .ForEach(layer => {
+                .Select(layer => {
                     MetaLayerProcessor processor;
                     layerProcessors.TryGetValue(layer.actionName, out processor);
-                    if (processor == null) {
-                        Debug.LogWarning(string.Format("No processor for meta layer {0}", layer.layerName));
-                    } else {
+                    return new LayerAndProcessor { layer = layer, processor = processor };                     
+                })
+                .OrderBy(it => it.processor != null ? it.processor.executionOrder : 0)
+                .ToList()
+                .ForEach(it => {
+                    var layer = it.layer;
+                    var processor = it.processor;
+                    if (processor != null) {
                         processor.Process(context, layer);
+                    } else {
+                        Debug.LogWarning(string.Format("No processor for meta layer {0}", layer.layerName));                        
                     }
                 });
         } catch (Exception e) {
@@ -146,6 +162,37 @@ public static class ASEImporter {
         EditorUtility.ClearProgressBar();
     }
 
+    public static void GenerateClipImageLayer(ImportContext ctx, string childPath, List<Sprite> frameSprites) {
+        foreach (var tag in ctx.file.frameTags) {
+            AnimationClip clip = ctx.generatedClips[tag];
+
+            int time = 0;
+            var keyFrames = new ObjectReferenceKeyframe[tag.to - tag.from + 2];
+            for (int i = tag.from; i <= tag.to; ++i) {
+                var aseFrame = ctx.file.frames[i];
+                keyFrames[i - tag.from] = new ObjectReferenceKeyframe {
+                    time = time * 1e-3f,
+                    value = frameSprites[aseFrame.frameID]
+                };
+
+                time += aseFrame.duration;
+            }
+
+            keyFrames[keyFrames.Length - 1] = new ObjectReferenceKeyframe {
+                time = time * 1e-3f - 1.0f / clip.frameRate,
+                value = frameSprites[tag.to]
+            };
+
+            var binding = new EditorCurveBinding {
+                path = childPath,
+                type = typeof(SpriteRenderer),
+                propertyName = "m_Sprite"
+            };
+
+            AnimationUtility.SetObjectReferenceCurve(clip, binding, keyFrames);
+        }
+    }
+
     static void GenerateAnimClips(ImportContext ctx) {
         Directory.CreateDirectory(ctx.animClipDirectory);       
         var fileNamePrefix = ctx.animClipDirectory + '/' + ctx.settings.baseName; 
@@ -157,6 +204,7 @@ public static class ASEImporter {
             var clipPath = fileNamePrefix + '_' + tag.name + ".anim";
             AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
 
+            // Create clip
             if (!clip) {
                 clip = new AnimationClip();
                 AssetDatabase.CreateAsset(clip, clipPath);
@@ -164,6 +212,7 @@ public static class ASEImporter {
                 AnimationUtility.SetAnimationEvents(clip, new AnimationEvent[0]);
             }
 
+            // Set loop property
             var loop = tag.properties.Contains("loop");
             var settings = AnimationUtility.GetAnimationClipSettings(clip);
             if (loop) {
@@ -177,35 +226,12 @@ public static class ASEImporter {
             }
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            int time = 0;
-            var keyFrames = new ObjectReferenceKeyframe[tag.to - tag.from + 2];
-            for (int i = tag.from; i <= tag.to; ++i) {
-                var aseFrame = ctx.file.frames[i];
-                keyFrames[i - tag.from] = new ObjectReferenceKeyframe {
-                    time = time * 1e-3f,
-                    value = ctx.generatedSprites[aseFrame.frameID]
-                };
-
-                time += aseFrame.duration;
-            }
-
-            keyFrames[keyFrames.Length - 1] = new ObjectReferenceKeyframe {
-                time = time * 1e-3f - 1.0f / clip.frameRate,
-                value = ctx.generatedSprites[tag.to]
-            };
-
-            var binding = new EditorCurveBinding {
-                path = childPath,
-                type = typeof(SpriteRenderer),
-                propertyName = "m_Sprite"
-            };
-
-            AnimationUtility.SetObjectReferenceCurve(clip, binding, keyFrames);
             EditorUtility.SetDirty(clip);
             ctx.generatedClips.Add(tag, clip);
         }
 
-        
+        // Generate main image
+        GenerateClipImageLayer(ctx, childPath, ctx.generatedSprites);
     }
 
     static void GenerateAnimController(ImportContext ctx) {

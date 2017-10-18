@@ -9,11 +9,11 @@ namespace MetaSprite {
 
 public class MetaLayerTransform : MetaLayerProcessor {
     
-    public string actionName {
+    public override string actionName {
         get { return "transform"; }
     }
 
-    public void Process(ImportContext ctx, Layer layer) {
+    public override void Process(ImportContext ctx, Layer layer) {
         var childName = layer.GetParamString(0);
 
         EditorCurveBinding

@@ -8,11 +8,11 @@ using TangentMode = UnityEditor.AnimationUtility.TangentMode;
 namespace MetaSprite {
     
 public class MetaLayerBoxCollider : MetaLayerProcessor {
-    public string actionName {
+    public override string actionName {
         get { return "boxCollider"; }
     }
     
-    public void Process(ImportContext ctx, Layer layer) {
+    public override void Process(ImportContext ctx, Layer layer) {
         var path = layer.GetParamString(0);
         EditorCurveBinding 
             bindingOffX = Binding(path, typeof(BoxCollider2D), "m_Offset.x"), 
