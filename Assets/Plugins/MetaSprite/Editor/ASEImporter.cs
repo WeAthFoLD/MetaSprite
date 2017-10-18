@@ -60,7 +60,7 @@ public static class ASEImporter {
         var processorTypes = FindAllTypes(typeof(MetaLayerProcessor));
         // Debug.Log("Found " + processorTypes.Length + " layer processor(s).");
         foreach (var type in processorTypes) {
-            if (type.IsAbstract) return;
+            if (type.IsAbstract) continue;
             try {
                 var instance = (MetaLayerProcessor) type.GetConstructor(new Type[0]).Invoke(new object[0]);
                 if (layerProcessors.ContainsKey(instance.actionName)) {

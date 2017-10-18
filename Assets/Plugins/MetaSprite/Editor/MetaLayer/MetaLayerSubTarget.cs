@@ -7,12 +7,12 @@ using System.IO;
 
 namespace MetaSprite {
 
-public class MetaLayerSubImage : MetaLayerProcessor {
+public class MetaLayerSubTarget : MetaLayerProcessor {
 
-    // syntax: @subImage(string subImageName, string targetChildObject)
+    // syntax: @subTarget(string subImageName, string targetChildObject)
 
     public override string actionName {
-        get { return "subImage"; }
+        get { return "subTarget"; }
     }
 
     public override int executionOrder {
@@ -30,7 +30,7 @@ public class MetaLayerSubImage : MetaLayerProcessor {
 
         var sprites = AtlasGenerator.GenerateAtlas(context, layers,
             Path.GetDirectoryName(context.atlasPath) + "/" + 
-                context.settings.baseName + "_" + subImageName + ".png");
+                context.fileNameNoExt + "_" + subImageName + ".png");
         ASEImporter.GenerateClipImageLayer(context, targetChildObject, sprites);
     }
 
