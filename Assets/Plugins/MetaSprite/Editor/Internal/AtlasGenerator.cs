@@ -199,7 +199,9 @@ public static class AtlasGenerator {
             }
         }
         
-        return frameSprites;
+        return frameSprites
+            .OrderBy(sprite => int.Parse(sprite.name.Substring(sprite.name.LastIndexOf('_') + 1)))
+            .ToList();;
     }
 
     class FrameImage {
