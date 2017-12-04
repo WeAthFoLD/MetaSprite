@@ -201,7 +201,7 @@ public static class AtlasGenerator {
         
         return frameSprites
             .OrderBy(sprite => int.Parse(sprite.name.Substring(sprite.name.LastIndexOf('_') + 1)))
-            .ToList();;
+            .ToList();
     }
 
     class FrameImage {
