@@ -21,6 +21,8 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
             bindingSizeY = Binding(path, typeof(BoxCollider2D), "m_Size.y"), 
             bindingEnable = Binding(path, typeof(BoxCollider2D), "m_Enabled");
 
+        bool changeEnable = layer.ParamCount >= 2 ? layer.GetParamBool(1) : true;
+
         List<Rect> frameRects = new List<Rect>();
         for (int i = 0; i < ctx.file.frames.Count; ++i) {
             var frame = ctx.file.frames[i];
@@ -97,7 +99,9 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
             AnimationUtility.SetEditorCurve(clip, bindingOffY, curveOffY);
             AnimationUtility.SetEditorCurve(clip, bindingSizeX, curveSizeX);
             AnimationUtility.SetEditorCurve(clip, bindingSizeY, curveSizeY);
-            AnimationUtility.SetEditorCurve(clip, bindingEnable, curveEnable);
+
+            if (changeEnable)
+                AnimationUtility.SetEditorCurve(clip, bindingEnable, curveEnable);
 
             EditorUtility.SetDirty(clip);
         }
