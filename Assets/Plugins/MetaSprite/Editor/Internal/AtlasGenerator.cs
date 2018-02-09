@@ -154,6 +154,7 @@ public static class AtlasGenerator {
     }
 
     static PackResult DoPackAtlas(List<PackData> list, int size) {
+        const int Border = 2;
         // Pack using the most simple shelf algorithm
         
         List<PackPos> posList = new List<PackPos>();
@@ -166,12 +167,12 @@ public static class AtlasGenerator {
         foreach (var data in list) {
             if (data.width > size)
                 return null;
-            if (x + data.width > size) { // create a new shelf
+            if (x + data.width + Border > size) { // create a new shelf
                 y += shelfHeight;
                 x = 0;
-                shelfHeight = data.height;
-            } else if (data.height > shelfHeight) { // increase shelf height
-                shelfHeight = data.height;
+                shelfHeight = data.height + Border;
+            } else if (data.height + Border > shelfHeight) { // increase shelf height
+                shelfHeight = data.height + Border;
             }
 
             if (y + shelfHeight > size) { // can't place this anymore
@@ -180,7 +181,7 @@ public static class AtlasGenerator {
 
             posList.Add(new PackPos { x = x, y = y });
 
-            x += data.width;
+            x += data.width + Border;
         }
 
         return new PackResult {
