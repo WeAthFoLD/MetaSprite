@@ -77,7 +77,7 @@ public static class ImportMenu {
 
             ScriptableObject.DestroyImmediate(testInstance, true);
 
-            pluginPath_ = Path.GetDirectoryName(Path.GetDirectoryName(scriptPath));
+            pluginPath_ = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(scriptPath)));
 
             return pluginPath_;
         }
