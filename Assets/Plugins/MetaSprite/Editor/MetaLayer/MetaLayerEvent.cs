@@ -45,11 +45,10 @@ public class MetaLayerEvent : MetaLayerProcessor {
                         evt.stringParameter = layer.GetParamString(1);
                     } else if (paramType == LayerParamType.Number) {
                         var fval = layer.GetParamFloat(1);
+                        evt.floatParameter = fval;
                         if (fval == Math.Floor(fval)) {
                             evt.intParameter = (int) fval;
-                        } else {
-                            evt.floatParameter = fval;
-                        }
+                        } 
                     }
 
                     events.Add(evt);
