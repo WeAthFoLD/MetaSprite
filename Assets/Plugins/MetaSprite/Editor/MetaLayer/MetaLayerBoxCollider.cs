@@ -75,11 +75,13 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
                 curveEnable = new AnimationCurve();
 
             float t = 0;
+            bool hasEnable = false;
             for (int f = frameTag.from; f <= frameTag.to; ++f) {
                 var rect = frameRects[f];
                 var enable = rect.size != Vector2.zero;
                 curveEnable.AddKey(new Keyframe(t, enable ? 1 : 0));
                 if (enable) {
+                    hasEnable = true;
                     curveOffX.AddKey(t, rect.position.x);
                     curveOffY.AddKey(t, rect.position.y);
                     curveSizeX.AddKey(t, rect.size.x);
@@ -89,21 +91,23 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
                 t += ctx.file.frames[f].duration / 1000.0f;
             }
 
-            MakeConstant(curveOffX);
-            MakeConstant(curveOffY);
-            MakeConstant(curveSizeX);
-            MakeConstant(curveSizeY);
-            MakeConstant(curveEnable);
+            if (hasEnable) {
+                MakeConstant(curveOffX);
+                MakeConstant(curveOffY);
+                MakeConstant(curveSizeX);
+                MakeConstant(curveSizeY);
+                MakeConstant(curveEnable);
 
-            AnimationUtility.SetEditorCurve(clip, bindingOffX, curveOffX);
-            AnimationUtility.SetEditorCurve(clip, bindingOffY, curveOffY);
-            AnimationUtility.SetEditorCurve(clip, bindingSizeX, curveSizeX);
-            AnimationUtility.SetEditorCurve(clip, bindingSizeY, curveSizeY);
+                AnimationUtility.SetEditorCurve(clip, bindingOffX, curveOffX);
+                AnimationUtility.SetEditorCurve(clip, bindingOffY, curveOffY);
+                AnimationUtility.SetEditorCurve(clip, bindingSizeX, curveSizeX);
+                AnimationUtility.SetEditorCurve(clip, bindingSizeY, curveSizeY);
 
-            if (changeEnable)
-                AnimationUtility.SetEditorCurve(clip, bindingEnable, curveEnable);
+                if (changeEnable)
+                    AnimationUtility.SetEditorCurve(clip, bindingEnable, curveEnable);
 
-            EditorUtility.SetDirty(clip);
+                EditorUtility.SetDirty(clip);
+            }
         }
     }
 
