@@ -517,7 +517,7 @@ public static class MetaLayerParser {
             new TokenDefinition(@"""[^""]*""", TKN_STRING),
             new TokenDefinition(@"([-+]?\d+\.\d+([eE][-+]?\d+)?)|([-+]?\d+)", TKN_NUMBER),
             new TokenDefinition(@"(true)|(false)", TKN_BOOL),
-            new TokenDefinition(@"[a-zA-Z0-9\_\-]+", TKN_ID),
+            new TokenDefinition(@"[a-zA-Z0-9_\-]+", TKN_ID),
             new TokenDefinition(@"\,", TKN_COMMA),
             new TokenDefinition(@"\(", TKN_LEFT),
             new TokenDefinition(@"\)", TKN_RIGHT),
