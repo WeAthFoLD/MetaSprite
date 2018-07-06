@@ -24,6 +24,10 @@ public class ImportSettings : ScriptableObject {
 
     public Vector2 customPivot;
 
+    public bool densePacked = true;
+
+    public int border = 3;
+
     public string baseName = ""; // If left empty, use .ase file name
 
     public string spriteTarget = "";
@@ -64,6 +68,9 @@ public class ImportSettingsEditor : Editor {
         if (settings.alignment == SpriteAlignment.Custom) {
             settings.customPivot = EGL.Vector2Field("Custom Pivot", settings.customPivot);
         }
+
+        settings.densePacked = EGL.Toggle("Dense Pack", settings.densePacked);
+        settings.border = EGL.IntField("Border", settings.border);
 
         EGL.Space();
         using (new GL.HorizontalScope(EditorStyles.toolbar)) {
