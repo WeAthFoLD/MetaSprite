@@ -56,6 +56,7 @@ public class Frame {
 
 public class Layer: UserDataAcceptor {
     public int index;
+    public int parentIndex; // =1 if level==0 (have no parent), otherwise the index of direct parent
     public bool visible;
     public BlendMode blendMode;
     public float opacity;
@@ -217,6 +218,9 @@ public static class ASEParser {
 
             UserDataAcceptor lastUserdataAcceptor = null;
 
+            var levelToIndex = new Dictionary<int, int>();
+            var enabledLayerIdxs = new List<int>();
+
             for (int i = 0; i < frameCount; ++i) {
                 var frame = new Frame();
                 frame.frameID = i;
@@ -242,7 +246,12 @@ public static class ASEParser {
                         layer.visible = (flags & 0x1) != 0;
                         
                         var layerType = reader.ReadWord();
-                        reader.ReadWord(); // childLevel
+                        var childLevel = reader.ReadWord(); // childLevel
+                        if (childLevel == 0) {
+                            layer.parentIndex = -1;
+                        } else {
+                            layer.parentIndex = levelToIndex[childLevel - 1];
+                        }
 
                         reader.ReadWord();
                         reader.ReadWord();
@@ -253,15 +262,26 @@ public static class ASEParser {
 
                         layer.layerName = reader.ReadUTF8();
 
-                        if (layerType == 0 && layer.visible && !layer.layerName.StartsWith("//")) {
-                            layer.index = readLayerIndex;
-                            layer.type = layer.layerName.StartsWith("@") ? LayerType.Meta : LayerType.Content;
-                            if (layer.type == LayerType.Meta) {
-                                MetaLayerParser.Parse(layer);
+                        var parentEnable = layer.parentIndex == -1 || enabledLayerIdxs.Contains(layer.parentIndex);
+                        var thisEnable = layer.visible && !layer.layerName.StartsWith("//");
+                        if (parentEnable && thisEnable) {
+                            if (layerType == 0) {
+                                layer.index = readLayerIndex;
+                                layer.type = layer.layerName.StartsWith("@") ? LayerType.Meta : LayerType.Content;
+                                if (layer.type == LayerType.Meta) {
+                                    MetaLayerParser.Parse(layer);
+                                }
+
+                                file.layers.Add(layer);
                             }
 
-                            file.layers.Add(layer);
+                            enabledLayerIdxs.Add(readLayerIndex);
                         }
+
+                        if (levelToIndex.ContainsKey(childLevel))
+                            levelToIndex[childLevel] = readLayerIndex;
+                        else
+                            levelToIndex.Add(childLevel, readLayerIndex);
 
                         ++readLayerIndex;
                         
