@@ -2,7 +2,7 @@
 
 MetaSprite is an Unity plugin that lets you import [Aseprite][aseprite]'s .ase file into Unity, as Mecanim animation clips/controllers. It also has rich **metadata support** built in, allowing one to manipulate colliders, change transforms, send messages (and much more!) easily in Aseprite.
 
-MetaSprite is currently in early developement stage.
+MetaSprite is now ready for production (already used heavily by myself in a WIP action platformer). New features will gradually be added.
 
 # Feature overview
 
