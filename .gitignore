@@ -35,7 +35,14 @@ sysinfo.txt
 *.unitypackage
 
 # Plugin test / Auto generated stuffs
-Assets/Plugins/MetaSprite/Editor/FileSettings/
-Assets/Plugins/MetaSprite/Editor/FileSettings.meta
+Assets/Plugins/MetaSprite/FileSettings/
+Assets/Plugins/MetaSprite/FileSettings.meta
 Assets/Test/
 Assets/Test.meta
+
+.idea/
+Logs/
+
+# JetBrains Rider
+Assets/Plugins/Editor.meta
+Assets/Plugins/Editor/*

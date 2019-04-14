@@ -34,6 +34,6 @@ See [wiki](https://github.com/WeAthFoLD/MetaSprite/wiki) for explanation of impo
 
 If this plugin helped you in your project or you want to support the developement, consider buying me a cup of coffee (°∀°)ﾉ
 
-PayPal: [Link](https://paypal.me/weathfold)
-
-AliPay: [Link](https://github.com/WeAthFoLD/MetaSprite/blob/master/Images/alipay-donation-qrcode.png)
+<a href="https://www.patreon.com/bePatron?u=2955382">
+<img src="https://c5.patreon.com/external/logo/become_a_patron_button.png"/>
+</a>
