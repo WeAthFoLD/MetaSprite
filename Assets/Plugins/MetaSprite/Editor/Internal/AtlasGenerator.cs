@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Boo.Lang.Runtime;
 using UnityEditor;
 using UnityEngine;
 
@@ -42,23 +43,25 @@ public static class AtlasGenerator {
                             if (c.a != 0f) {
                                 var x = cx + cel.x;
                                 var y = cy + cel.y;
+                                if (0 <= x && x < file.width &&
+                                    0 <= y && y < file.height) { // Aseprite allows some pixels out of bounds to be kept, ignore them
+                                    var lastColor = image.GetPixel(x, y);
+                                    // blending
+                                    var color = Color.Lerp(lastColor, c, c.a);
+                                    color.a = lastColor.a + c.a * (1 - lastColor.a);
+                                    color.r /= color.a;
+                                    color.g /= color.a;
+                                    color.b /= color.a;
 
-                                var lastColor = image.GetPixel(x, y);
-                                // blending
-                                var color = Color.Lerp(lastColor, c, c.a);
-                                color.a = lastColor.a + c.a * (1 - lastColor.a);
-                                color.r /= color.a;
-                                color.g /= color.a;
-                                color.b /= color.a;
+                                    image.SetPixel(x, y, color);
 
-                                image.SetPixel(x, y, color);
+                                    // expand image area
+                                    image.minx = Mathf.Min(image.minx, x);
+                                    image.miny = Mathf.Min(image.miny, y);
 
-                                // expand image area
-                                image.minx = Mathf.Min(image.minx, x);
-                                image.miny = Mathf.Min(image.miny, y);
-
-                                image.maxx = Mathf.Max(image.maxx, x);
-                                image.maxy = Mathf.Max(image.maxy, y);
+                                    image.maxx = Mathf.Max(image.maxx, x);
+                                    image.maxy = Mathf.Max(image.maxy, y);
+                                }
                             }
                         }
                     }
@@ -233,7 +236,11 @@ public static class AtlasGenerator {
         }
 
         public Color GetPixel(int x, int y) {
-            return data[y * width + x];
+            int idx = y * width + x;
+            if (idx < 0 || idx >= data.Length) {
+                throw new RuntimeException(string.Format("Pixel read of range! x: {0}, y: {1} where w: {2}, h: {3}", x, y, width, height));
+            }
+            return data[idx];
         }
 
         public void SetPixel(int x, int y, Color color) {
