@@ -46,6 +46,7 @@ public class ImportSettings : ScriptableObject {
         }
     }
 
+    public bool automaticReimport;
 }
 
 [CustomEditor(typeof(ImportSettings))]
@@ -71,8 +72,9 @@ public class ImportSettingsEditor : Editor {
 
         settings.densePacked = EGL.Toggle("Dense Pack", settings.densePacked);
         settings.border = EGL.IntField("Border", settings.border);
+        settings.automaticReimport = EGL.Toggle("Automatic Reimport", settings.automaticReimport);
 
-        EGL.Space();
+            EGL.Space();
         using (new GL.HorizontalScope(EditorStyles.toolbar)) {
             GL.Label("Output");
         }

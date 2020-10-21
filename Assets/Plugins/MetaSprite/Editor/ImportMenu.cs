@@ -30,7 +30,7 @@ public static class ImportMenu {
     [MenuItem("Assets/Aseprite/File Settings", priority = 60)]
     static void EditAssetSettings() {
         var aseprites = GetSelectedAseprites();
-        var path = GetImportSettingsPath(aseprites[0]);
+        var path = ImportSettingsReference.GetImportSettingsPath(aseprites[0]);
         var ret = (ImportSettingsReference) AssetDatabase.LoadAssetAtPath(path, typeof(ImportSettingsReference));
         if (ret == null) {
             ret = ScriptableObject.CreateInstance<ImportSettingsReference>();
@@ -53,7 +53,7 @@ public static class ImportMenu {
     [MenuItem("Assets/Aseprite/Clear File Settings", priority = 60)]
     static void ClearAssetSettings() {
         GetSelectedAseprites()
-            .Select(it => GetImportSettingsPath(it))
+            .Select(it => ImportSettingsReference.GetImportSettingsPath(it))
             .ToList()
             .ForEach(it => AssetDatabase.DeleteAsset(it));
     }
@@ -63,46 +63,18 @@ public static class ImportMenu {
         return GetSelectedAseprites().Length > 0;
     }
 
-    static string pluginPath_;
-
-    static string pluginPath {
-        get {
-            if (pluginPath_ != null) {
-                return pluginPath_;
-            }
-            
-            var testInstance = ScriptableObject.CreateInstance<ProjectTestInstance>();
-            var script = MonoScript.FromScriptableObject(testInstance);
-            var scriptPath = AssetDatabase.GetAssetPath(script);
-
-            ScriptableObject.DestroyImmediate(testInstance, true);
-
-            pluginPath_ = Path.GetDirectoryName(Path.GetDirectoryName(Path.GetDirectoryName(scriptPath)));
-
-            return pluginPath_;
-        }
-    }
-
-    static string GetImportSettingsPath(DefaultAsset asset) {
-        var guid = AssetDatabase.AssetPathToGUID(AssetDatabase.GetAssetPath(asset));
-        var path = pluginPath + "/FileSettings/" + guid + ".asset";
-        return path;
-    }
-
     static void DoImport(DefaultAsset[] assets) {
         foreach (var asset in assets) {
-            var settingsPath = GetImportSettingsPath(asset);
-            var reference = (ImportSettingsReference) AssetDatabase.LoadAssetAtPath(settingsPath, typeof(ImportSettingsReference));
-            if (!reference) {
+            var settings = ImportSettingsReference.LoadImportSettings(asset);
+            if (!settings) {
                 CreateSettingsThenImport(assets);
                 return;
             }
         }
 
         foreach (var asset in assets) {
-            var settingsPath = GetImportSettingsPath(asset);
-            var reference = (ImportSettingsReference) AssetDatabase.LoadAssetAtPath(settingsPath, typeof(ImportSettingsReference));
-            if (reference.settings)
+            var reference = ImportSettingsReference.LoadImportSettings(asset);
+            if (reference)
                 ASEImporter.Import(asset, reference.settings);
             else
                 Debug.LogWarning("File " + asset.name + " has empty import settings, it is ignored.");
@@ -124,7 +96,7 @@ public static class ImportMenu {
         var window = (CreateSettingsWindow) EditorWindow.CreateInstance(typeof(CreateSettingsWindow));
         window.position = rect;
 
-        var paths = assets.Select(it => GetImportSettingsPath(it)).ToList();
+        var paths = assets.Select(it => ImportSettingsReference.GetImportSettingsPath(it)).ToList();
 
         window._Init(paths, settings => { foreach (var asset in assets) {
             ASEImporter.Import(asset, settings);
