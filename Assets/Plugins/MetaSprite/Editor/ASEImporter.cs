@@ -55,7 +55,7 @@ public static class ASEImporter {
         return stage.ToString();
     }
 
-    public static void Refresh() {
+    public static void Startup() {
         layerProcessors.Clear();
         var processorTypes = FindAllTypes(typeof(MetaLayerProcessor));
         // Debug.Log("Found " + processorTypes.Length + " layer processor(s).");

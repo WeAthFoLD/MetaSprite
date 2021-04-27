@@ -18,7 +18,7 @@ public static class ImportMenu {
 
     [MenuItem("Assets/Aseprite/Import", priority = 60)]
     static void MenuClicked() {
-        ASEImporter.Refresh();
+        ASEImporter.Startup();
         DoImport(GetSelectedAseprites());
     }
 
@@ -30,7 +30,7 @@ public static class ImportMenu {
     [MenuItem("Assets/Aseprite/File Settings", priority = 60)]
     static void EditAssetSettings() {
         var aseprites = GetSelectedAseprites();
-        var path = ImportSettingsReference.GetImportSettingsPath(aseprites[0]);
+        var path = ImportUtil.GetImportSettingsPath(aseprites[0]);
         var ret = (ImportSettingsReference) AssetDatabase.LoadAssetAtPath(path, typeof(ImportSettingsReference));
         if (ret == null) {
             ret = ScriptableObject.CreateInstance<ImportSettingsReference>();
@@ -53,7 +53,7 @@ public static class ImportMenu {
     [MenuItem("Assets/Aseprite/Clear File Settings", priority = 60)]
     static void ClearAssetSettings() {
         GetSelectedAseprites()
-            .Select(it => ImportSettingsReference.GetImportSettingsPath(it))
+            .Select(ImportUtil.GetImportSettingsPath)
             .ToList()
             .ForEach(it => AssetDatabase.DeleteAsset(it));
     }
@@ -65,7 +65,7 @@ public static class ImportMenu {
 
     static void DoImport(DefaultAsset[] assets) {
         foreach (var asset in assets) {
-            var settings = ImportSettingsReference.LoadImportSettings(asset);
+            var settings = ImportUtil.LoadImportSettings(asset);
             if (!settings) {
                 CreateSettingsThenImport(assets);
                 return;
@@ -73,7 +73,7 @@ public static class ImportMenu {
         }
 
         foreach (var asset in assets) {
-            var reference = ImportSettingsReference.LoadImportSettings(asset);
+            var reference = ImportUtil.LoadImportSettings(asset);
             if (reference)
                 ASEImporter.Import(asset, reference.settings);
             else
@@ -85,7 +85,7 @@ public static class ImportMenu {
         return Selection.GetFiltered<DefaultAsset>(SelectionMode.DeepAssets)
                         .Where(it => {
                             var path = AssetDatabase.GetAssetPath(it);
-                            return path.EndsWith(".ase") || path.EndsWith(".aseprite");
+                            return ImportUtil.IsAseFile(path);
                         })
                         .ToArray();
     }
@@ -96,7 +96,7 @@ public static class ImportMenu {
         var window = (CreateSettingsWindow) EditorWindow.CreateInstance(typeof(CreateSettingsWindow));
         window.position = rect;
 
-        var paths = assets.Select(it => ImportSettingsReference.GetImportSettingsPath(it)).ToList();
+        var paths = assets.Select(it => ImportUtil.GetImportSettingsPath(it)).ToList();
 
         window._Init(paths, settings => { foreach (var asset in assets) {
             ASEImporter.Import(asset, settings);

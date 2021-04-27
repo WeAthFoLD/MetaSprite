@@ -1,13 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEditor;
 using System.IO;
-using System;
-using UnityEditor.Animations;
-
-using GL = UnityEngine.GUILayout;
-using EGL = UnityEditor.EditorGUILayout;
 
 namespace MetaSprite {
 
@@ -40,13 +33,14 @@ public class ImportSettings : ScriptableObject {
 
     public string animControllerOutputPath;
 
+    public bool automaticReimport;
+
     public Vector2 PivotRelativePos {
         get {
             return alignment.GetRelativePos(customPivot);
         }
     }
 
-    public bool automaticReimport;
 }
 
 [CustomEditor(typeof(ImportSettings))]
@@ -56,33 +50,33 @@ public class ImportSettingsEditor : Editor {
         var settings = (ImportSettings) target;
         EditorGUI.BeginChangeCheck();
 
-        using (new GL.HorizontalScope(EditorStyles.toolbar)) {
-            GL.Label("Options");
+        using (new GUILayout.HorizontalScope(EditorStyles.toolbar)) {
+            GUILayout.Label("Options");
         }
 
-        settings.baseName = EGL.TextField("Base Name", settings.baseName);
-        settings.spriteTarget = EGL.TextField("Target Child Object", settings.spriteTarget);
-        EGL.Space();
+        settings.baseName = EditorGUILayout.TextField("Base Name", settings.baseName);
+        settings.spriteTarget = EditorGUILayout.TextField("Target Child Object", settings.spriteTarget);
+        EditorGUILayout.Space();
 
-        settings.ppu = EGL.IntField("Pixel Per Unit", settings.ppu);
-        settings.alignment = (SpriteAlignment) EGL.EnumPopup("Default Align", settings.alignment);
+        settings.ppu = EditorGUILayout.IntField("Pixel Per Unit", settings.ppu);
+        settings.alignment = (SpriteAlignment) EditorGUILayout.EnumPopup("Default Align", settings.alignment);
         if (settings.alignment == SpriteAlignment.Custom) {
-            settings.customPivot = EGL.Vector2Field("Custom Pivot", settings.customPivot);
+            settings.customPivot = EditorGUILayout.Vector2Field("Custom Pivot", settings.customPivot);
         }
 
-        settings.densePacked = EGL.Toggle("Dense Pack", settings.densePacked);
-        settings.border = EGL.IntField("Border", settings.border);
-        settings.automaticReimport = EGL.Toggle("Automatic Reimport", settings.automaticReimport);
+        settings.densePacked = EditorGUILayout.Toggle("Dense Pack", settings.densePacked);
+        settings.border = EditorGUILayout.IntField("Border", settings.border);
+        settings.automaticReimport = EditorGUILayout.Toggle("Automatic Reimport", settings.automaticReimport);
 
-            EGL.Space();
-        using (new GL.HorizontalScope(EditorStyles.toolbar)) {
-            GL.Label("Output");
+        EditorGUILayout.Space();
+        using (new GUILayout.HorizontalScope(EditorStyles.toolbar)) {
+            GUILayout.Label("Output");
         }
         
         settings.atlasOutputDirectory = PathSelection("Atlas Directory", settings.atlasOutputDirectory);
         settings.clipOutputDirectory = PathSelection("Anim Clip Directory", settings.clipOutputDirectory);
 
-        settings.controllerPolicy = (AnimControllerOutputPolicy) EGL.EnumPopup("Anim Controller Policy", settings.controllerPolicy);
+        settings.controllerPolicy = (AnimControllerOutputPolicy) EditorGUILayout.EnumPopup("Anim Controller Policy", settings.controllerPolicy);
         if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride) {
             settings.animControllerOutputPath = PathSelection("Anim Controller Directory", settings.animControllerOutputPath);
         }
@@ -93,14 +87,14 @@ public class ImportSettingsEditor : Editor {
     }
 
     string PathSelection(string id, string path) {
-        EGL.BeginHorizontal();
-        EGL.PrefixLabel(id);
-        path = EGL.TextField(path);
-        if (GL.Button("...", GL.Width(30))) {
+        EditorGUILayout.BeginHorizontal();
+        EditorGUILayout.PrefixLabel(id);
+        path = EditorGUILayout.TextField(path);
+        if (GUILayout.Button("...", GUILayout.Width(30))) {
             path = GetAssetPath(EditorUtility.OpenFolderPanel("Select path", path, ""));
         }
 
-        EGL.EndHorizontal();
+        EditorGUILayout.EndHorizontal();
         return path;
     }
 
