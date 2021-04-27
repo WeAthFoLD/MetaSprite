@@ -9,7 +9,7 @@ MetaSprite is now ready for production (already used heavily by myself in a WIP 
 * Doesn't require external aseprite executable to run
 * Blazing fast
 * Efficient atlas packing
-* Simple workflow, only requiring right-clicking on the sprite file and choose Import
+* Simple workflow achieved using the new scriptable pipeline
 * Extensive metadata support
   * Commented (ignored) Layers/Tags
   * Manipulate colliders/events/positions/sprite pivots using image data
