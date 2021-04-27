@@ -1,4 +1,7 @@
-﻿using System.Collections;
+﻿#if UNITY_2019_4_OR_NEWER
+#define SCRIPTABLE_IMPORTERS
+#endif
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,11 +17,12 @@ using System;
 
 namespace MetaSprite {
 
+#if !SCRIPTABLE_IMPORTERS
 public static class ImportMenu {
 
     [MenuItem("Assets/Aseprite/Import", priority = 60)]
     static void MenuClicked() {
-        ASEImporter.Startup();
+        ASEImportProcess.Startup();
         DoImport(GetSelectedAseprites());
     }
 
@@ -75,7 +79,7 @@ public static class ImportMenu {
         foreach (var asset in assets) {
             var reference = ImportUtil.LoadImportSettings(asset);
             if (reference)
-                ASEImporter.Import(asset, reference.settings);
+                ASEImportProcess.Import(AssetDatabase.GetAssetPath(asset), reference.settings);
             else
                 Debug.LogWarning("File " + asset.name + " has empty import settings, it is ignored.");
         }
@@ -99,7 +103,7 @@ public static class ImportMenu {
         var paths = assets.Select(it => ImportUtil.GetImportSettingsPath(it)).ToList();
 
         window._Init(paths, settings => { foreach (var asset in assets) {
-            ASEImporter.Import(asset, settings);
+            ASEImportProcess.Import(AssetDatabase.GetAssetPath(asset), settings);
         } });
 
         window.ShowPopup();
@@ -171,5 +175,6 @@ public static class ImportMenu {
     }
 
 }
+#endif
 
 }

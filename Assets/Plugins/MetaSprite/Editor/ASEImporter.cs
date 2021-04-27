@@ -1,4 +1,11 @@
-﻿using System.Collections;
+﻿#if UNITY_2020_2_OR_NEWER
+#define SCRIPTABLE_IMPORTERS
+using UnityEditor.AssetImporters;
+#elif UNITY_2019_4_OR_NEWER
+#define SCRIPTABLE_IMPORTERS
+using UnityEditor.Experimental.AssetImporters;
+#endif
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System;
@@ -35,7 +42,18 @@ public class ImportContext {
 
 }
 
-public static class ASEImporter {
+#if SCRIPTABLE_IMPORTERS
+[ScriptedImporter(1, new[] { "ase", "aseprite" })]
+public class ASEImporter : ScriptedImporter {
+
+    public ImportSettings settings;
+
+    public override void OnImportAsset(AssetImportContext ctx) {
+    }
+}
+#endif
+
+public static class ASEImportProcess {
 
     static readonly Dictionary<string, MetaLayerProcessor> layerProcessors = new Dictionary<string, MetaLayerProcessor>();
 
@@ -88,10 +106,7 @@ public static class ASEImporter {
     }
 
 
-    public static void Import(DefaultAsset defaultAsset, ImportSettings settings) {
-
-        var path = AssetDatabase.GetAssetPath(defaultAsset);
-
+    public static void Import(string path, ImportSettings settings) {
         var context = new ImportContext {
             // file = file,
             settings = settings,
