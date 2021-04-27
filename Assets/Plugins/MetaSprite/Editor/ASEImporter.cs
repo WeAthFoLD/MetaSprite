@@ -107,6 +107,12 @@ public static class ASEImportProcess {
 
 
     public static void Import(string path, ImportSettings settings) {
+        if (!settings.CheckIsValid()) {
+            var settingsPath = AssetDatabase.GetAssetPath(settings);
+            Debug.LogError($"Import settings {settingsPath} is invalid, please fix it before importing.");
+            return;
+        }
+        
         var context = new ImportContext {
             // file = file,
             settings = settings,
@@ -122,7 +128,7 @@ public static class ASEImportProcess {
             context.atlasPath = Path.Combine(settings.atlasOutputDirectory, context.fileNameNoExt + ".png");
 
             if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride)
-                context.animControllerPath = settings.animControllerOutputPath + "/" + settings.baseName + ".controller";
+                context.animControllerPath = settings.animControllerOutputDirectory + "/" + settings.baseName + ".controller";
             context.animClipDirectory = settings.clipOutputDirectory;
 
             // Create paths in advance
@@ -250,8 +256,8 @@ public static class ASEImportProcess {
     }
 
     static void GenerateAnimController(ImportContext ctx) {
-        if (ctx.animControllerPath == null) {
-            Debug.LogWarning("No animator controller specified. Controller generation will be ignored");
+        if (string.IsNullOrEmpty(ctx.animControllerPath)) {
+            // Debug.LogWarning("No animator controller specified. Controller generation will be ignored");
             return;
         }
 

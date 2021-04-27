@@ -48,7 +48,7 @@ namespace MetaSprite.Internal {
                 // Legacy pipeline
                 var asset = AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
                 var reference = ImportUtil.LoadImportSettings(asset);
-                if (reference && reference.settings.automaticReimport)
+                if (reference)
                 {
                     ASEImportProcess.Import(path, reference.settings);
                     refreshed = true;

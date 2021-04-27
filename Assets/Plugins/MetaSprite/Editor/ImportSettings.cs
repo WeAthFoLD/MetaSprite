@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.IO;
+using UnityEngine.Serialization;
 
 namespace MetaSprite {
 
@@ -23,17 +24,21 @@ public class ImportSettings : ScriptableObject {
 
     public string baseName = ""; // If left empty, use .ase file name
 
-    public string spriteTarget = "";
+    public string spriteTarget;
 
-    public string atlasOutputDirectory = "";
+    public string atlasOutputDirectory = "Assets/";
 
-    public string clipOutputDirectory = "";
+    public string clipOutputDirectory = "Assets/";
 
     public AnimControllerOutputPolicy controllerPolicy;
 
-    public string animControllerOutputPath;
+    [FormerlySerializedAs("animControllerOutputPath")]
+    public string animControllerOutputDirectory = "Assets/";
 
-    public bool automaticReimport;
+    public bool CheckIsValid()
+    {
+        return !string.IsNullOrEmpty(baseName);
+    }
 
     public Vector2 PivotRelativePos {
         get {
@@ -45,6 +50,9 @@ public class ImportSettings : ScriptableObject {
 
 [CustomEditor(typeof(ImportSettings))]
 public class ImportSettingsEditor : Editor {
+    private static GUIContent 
+        _textBaseName = new GUIContent("Base Name", "Mainly controls prefix name of generated files."),
+        _textSpriteTarget = new GUIContent("Target Child Object", "Which child object should the animation target (leave empty for root)");
 
     public override void OnInspectorGUI() {
         var settings = (ImportSettings) target;
@@ -54,8 +62,12 @@ public class ImportSettingsEditor : Editor {
             GUILayout.Label("Options");
         }
 
-        settings.baseName = EditorGUILayout.TextField("Base Name", settings.baseName);
-        settings.spriteTarget = EditorGUILayout.TextField("Target Child Object", settings.spriteTarget);
+        settings.baseName = EditorGUILayout.TextField(_textBaseName, settings.baseName);
+        if (string.IsNullOrEmpty(settings.baseName)) {
+            EditorGUILayout.HelpBox("Base name must be specified.", MessageType.Error);
+        }
+        
+        settings.spriteTarget = EditorGUILayout.TextField(_textSpriteTarget, settings.spriteTarget);
         EditorGUILayout.Space();
 
         settings.ppu = EditorGUILayout.IntField("Pixel Per Unit", settings.ppu);
@@ -66,7 +78,6 @@ public class ImportSettingsEditor : Editor {
 
         settings.densePacked = EditorGUILayout.Toggle("Dense Pack", settings.densePacked);
         settings.border = EditorGUILayout.IntField("Border", settings.border);
-        settings.automaticReimport = EditorGUILayout.Toggle("Automatic Reimport", settings.automaticReimport);
 
         EditorGUILayout.Space();
         using (new GUILayout.HorizontalScope(EditorStyles.toolbar)) {
@@ -78,7 +89,7 @@ public class ImportSettingsEditor : Editor {
 
         settings.controllerPolicy = (AnimControllerOutputPolicy) EditorGUILayout.EnumPopup("Anim Controller Policy", settings.controllerPolicy);
         if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride) {
-            settings.animControllerOutputPath = PathSelection("Anim Controller Directory", settings.animControllerOutputPath);
+            settings.animControllerOutputDirectory = PathSelection("Anim Controller Directory", settings.animControllerOutputDirectory);
         }
 
         if (EditorGUI.EndChangeCheck()) {

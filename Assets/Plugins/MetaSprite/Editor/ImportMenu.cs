@@ -23,7 +23,13 @@ public static class ImportMenu {
     [MenuItem("Assets/Aseprite/Import", priority = 60)]
     static void MenuClicked() {
         ASEImportProcess.Startup();
-        DoImport(GetSelectedAseprites());
+
+        var selectedAseArr = GetSelectedAseprites();
+        if (selectedAseArr.Any(x => !ImportUtil.LoadImportSettings(x))) {
+            CreateSettingsThenImport(selectedAseArr);
+        } else {
+            DoImport(selectedAseArr);
+        }
     }
 
     [MenuItem("Assets/Aseprite/Import", true)]
@@ -69,19 +75,12 @@ public static class ImportMenu {
 
     static void DoImport(DefaultAsset[] assets) {
         foreach (var asset in assets) {
-            var settings = ImportUtil.LoadImportSettings(asset);
-            if (!settings) {
-                CreateSettingsThenImport(assets);
-                return;
-            }
-        }
-
-        foreach (var asset in assets) {
             var reference = ImportUtil.LoadImportSettings(asset);
-            if (reference)
+            if (!reference) {
+                Debug.LogWarning("File " + asset.name + " has no import settings, it is ignored.");
+            } else {
                 ASEImportProcess.Import(AssetDatabase.GetAssetPath(asset), reference.settings);
-            else
-                Debug.LogWarning("File " + asset.name + " has empty import settings, it is ignored.");
+            }
         }
     }
 
@@ -102,9 +101,7 @@ public static class ImportMenu {
 
         var paths = assets.Select(it => ImportUtil.GetImportSettingsPath(it)).ToList();
 
-        window._Init(paths, settings => { foreach (var asset in assets) {
-            ASEImportProcess.Import(AssetDatabase.GetAssetPath(asset), settings);
-        } });
+        window._Init(paths, settings => { DoImport(assets); });
 
         window.ShowPopup();
     }
@@ -154,6 +151,7 @@ public static class ImportMenu {
                     AssetDatabase.CreateAsset(instance, path);
                 }
 
+                AssetDatabase.Refresh();
                 finishedAction(settings);
                 this.Close();
             }
