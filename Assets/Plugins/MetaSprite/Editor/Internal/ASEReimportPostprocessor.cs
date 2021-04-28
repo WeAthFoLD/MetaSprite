@@ -1,8 +1,6 @@
 ﻿#if UNITY_2020_2_OR_NEWER
-#define SCRIPTABLE_IMPORTERS
 using UnityEditor.AssetImporters;
 #elif UNITY_2019_4_OR_NEWER
-#define SCRIPTABLE_IMPORTERS
 using UnityEditor.Experimental.AssetImporters;
 #endif
 using System;
@@ -36,24 +34,12 @@ namespace MetaSprite.Internal {
             foreach (var path in _autoImports) {
                 bool refreshed = false;
 
-
-#if SCRIPTABLE_IMPORTERS
                 // Scriptable importer pipeline
                 var importer = (ASEImporter) AssetImporter.GetAtPath(path);
                 if (importer && importer.settings) {
                     ASEImportProcess.Import(path, importer.settings);
                     refreshed = true;
                 }
-#else
-                // Legacy pipeline
-                var asset = AssetDatabase.LoadAssetAtPath<DefaultAsset>(path);
-                var reference = ImportUtil.LoadImportSettings(asset);
-                if (reference)
-                {
-                    ASEImportProcess.Import(path, reference.settings);
-                    refreshed = true;
-                }
-#endif
 
                 if (refreshed)
                     Debug.Log("Auto reimport ase success: " + path);

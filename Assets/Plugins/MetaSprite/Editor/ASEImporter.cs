@@ -1,8 +1,6 @@
 ﻿#if UNITY_2020_2_OR_NEWER
-#define SCRIPTABLE_IMPORTERS
 using UnityEditor.AssetImporters;
 #elif UNITY_2019_4_OR_NEWER
-#define SCRIPTABLE_IMPORTERS
 using UnityEditor.Experimental.AssetImporters;
 #endif
 using System.Collections;
@@ -42,7 +40,6 @@ public class ImportContext {
 
 }
 
-#if SCRIPTABLE_IMPORTERS
 [ScriptedImporter(1, new[] { "ase", "aseprite" })]
 public class ASEImporter : ScriptedImporter {
 
@@ -51,7 +48,6 @@ public class ASEImporter : ScriptedImporter {
     public override void OnImportAsset(AssetImportContext ctx) {
     }
 }
-#endif
 
 public static class ASEImportProcess {
 
