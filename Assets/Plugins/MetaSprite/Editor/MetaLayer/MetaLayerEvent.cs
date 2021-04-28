@@ -27,7 +27,7 @@ public class MetaLayerEvent : MetaLayerProcessor {
         LayerParamType paramType = layer.GetParamType(1);
 
         foreach (var frametag in file.frameTags) {
-            var clip = ctx.generatedClips[frametag];
+            var clip = ctx.output.generatedClips[frametag];
             var events = new List<AnimationEvent>(clip.events);
 
             var time = 0.0f;

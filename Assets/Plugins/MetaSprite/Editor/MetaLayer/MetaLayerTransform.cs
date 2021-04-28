@@ -48,14 +48,14 @@ public class MetaLayerTransform : MetaLayerProcessor {
             if (pixelCount > 0) {
                 center /= pixelCount;
                 var pivot = Vector2.Scale(ctx.settings.PivotRelativePos, new Vector2(file.width, file.height));
-                var posWorld = (center - pivot) / ctx.settings.ppu;
+                var posWorld = (center - pivot) / ctx.settings.pixelPerUnit;
 
                 frames.Add(i, posWorld);
             }
         }
 
         foreach (var frameTag in file.frameTags) {
-            var clip = ctx.generatedClips[frameTag];
+            var clip = ctx.output.generatedClips[frameTag];
 
             AnimationCurve curveX = new AnimationCurve(), 
                            curveY = new AnimationCurve();

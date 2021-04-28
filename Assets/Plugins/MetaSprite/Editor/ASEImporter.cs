@@ -18,34 +18,45 @@ namespace MetaSprite {
 
 public class ImportContext {
 
+    // Input
     public ASEFile file;
-    public ImportSettings settings;
+    public string mainName;
+    public ASEImportSettings settings;
 
-    public string fileDirectory;
-    public string fileName;
-    public string fileNameNoExt;
+    public readonly ImportOutput output = new ImportOutput();
     
-    public string atlasPath;
-    public string animControllerPath;
-    public string animClipDirectory;
-
-    public List<Sprite> generatedSprites = new List<Sprite>();
-
     // The local texture coordinate for bottom-left point of each frame's crop rect, in Unity texture space.
     public List<Vector2> spriteCropPositions = new List<Vector2>();
-
-    public Dictionary<FrameTag, AnimationClip> generatedClips = new Dictionary<FrameTag, AnimationClip>();
-
+    
     public Dictionary<string, List<Layer>> subImageLayers = new Dictionary<string, List<Layer>>();
 
+}
+
+public class ImportOutput {
+    public Texture2D generatedAtlas;
+    public readonly List<Sprite> generatedSprites = new List<Sprite>();
+    public readonly Dictionary<FrameTag, AnimationClip> generatedClips = new Dictionary<FrameTag, AnimationClip>();
 }
 
 [ScriptedImporter(1, new[] { "ase", "aseprite" })]
 public class ASEImporter : ScriptedImporter {
 
-    public ImportSettings settings;
+    public bool importDirectly = true;
+    public ASEImportSettings settings = new ASEImportSettings();
 
     public override void OnImportAsset(AssetImportContext ctx) {
+        if (!importDirectly)
+            return;
+        
+        var output = ASEImportProcess.Import(ctx.assetPath, settings);
+
+        ctx.AddObjectToAsset(output.generatedAtlas.name, output.generatedAtlas);
+        foreach (var sprite in output.generatedSprites) {
+            ctx.AddObjectToAsset(sprite.name, sprite);
+        }
+        foreach (var entry in output.generatedClips) {
+            ctx.AddObjectToAsset(entry.Value.name, entry.Value);
+        }
     }
 }
 
@@ -69,8 +80,10 @@ public static class ASEImportProcess {
         return stage.ToString();
     }
 
-    public static void Startup() {
-        layerProcessors.Clear();
+    private static void _CheckStartup() {
+        if (layerProcessors.Count > 0)
+            return;
+        
         var processorTypes = FindAllTypes(typeof(MetaLayerProcessor));
         // Debug.Log("Found " + processorTypes.Length + " layer processor(s).");
         foreach (var type in processorTypes) {
@@ -101,43 +114,24 @@ public static class ASEImportProcess {
         public MetaLayerProcessor processor;
     }
 
+    public static ImportOutput Import(string path, ASEImportSettings settings) {
+        _CheckStartup();
 
-    public static void Import(string path, ImportSettings settings) {
-        if (!settings.CheckIsValid()) {
-            var settingsPath = AssetDatabase.GetAssetPath(settings);
-            Debug.LogError($"Import settings {settingsPath} is invalid, please fix it before importing.");
-            return;
-        }
-        
+        var fileName = Path.GetFileNameWithoutExtension(path);
         var context = new ImportContext {
-            // file = file,
+            mainName = fileName,
             settings = settings,
-            fileDirectory = Path.GetDirectoryName(path),
-            fileName = Path.GetFileName(path),
-            fileNameNoExt = Path.GetFileNameWithoutExtension(path)
         };
 
         try {
             ImportStage(context, Stage.LoadFile);
             context.file = ASEParser.Parse(File.ReadAllBytes(path));        
-
-            context.atlasPath = Path.Combine(settings.atlasOutputDirectory, context.fileNameNoExt + ".png");
-
-            if (settings.controllerPolicy == AnimControllerOutputPolicy.CreateOrOverride)
-                context.animControllerPath = settings.animControllerOutputDirectory + "/" + settings.baseName + ".controller";
-            context.animClipDirectory = settings.clipOutputDirectory;
-
-            // Create paths in advance
-            Directory.CreateDirectory(settings.atlasOutputDirectory);
-            Directory.CreateDirectory(context.animClipDirectory);
-            if (context.animControllerPath != null)
-                Directory.CreateDirectory(Path.GetDirectoryName(context.animControllerPath));
-            //
-
+            
             ImportStage(context, Stage.GenerateAtlas);
-            context.generatedSprites = AtlasGenerator.GenerateAtlas(context, 
-                context.file.layers.Where(it => it.type == LayerType.Content).ToList(),
-                context.atlasPath);
+            AtlasGenerator.GenerateAtlasAndSprites(
+                context, 
+                context.file.layers.Where(it => it.type == LayerType.Content).ToList()
+            );
 
             ImportStage(context, Stage.GenerateClips);
             GenerateAnimClips(context);
@@ -169,10 +163,12 @@ public static class ASEImportProcess {
         }
 
         ImportEnd(context);
+
+        return context.output;
     }
 
     static void ImportStage(ImportContext ctx, Stage stage) {
-        EditorUtility.DisplayProgressBar("Importing " + ctx.fileName, stage.GetDisplayString(), stage.GetProgress());
+        EditorUtility.DisplayProgressBar("Importing " + ctx.mainName, stage.GetDisplayString(), stage.GetProgress());
     }
 
     static void ImportEnd(ImportContext ctx) {
@@ -181,7 +177,7 @@ public static class ASEImportProcess {
 
     public static void GenerateClipImageLayer(ImportContext ctx, string childPath, List<Sprite> frameSprites) {
         foreach (var tag in ctx.file.frameTags) {
-            AnimationClip clip = ctx.generatedClips[tag];
+            AnimationClip clip = ctx.output.generatedClips[tag];
 
             int time = 0;
             var keyFrames = new ObjectReferenceKeyframe[tag.to - tag.from + 2];
@@ -211,23 +207,12 @@ public static class ASEImportProcess {
     }
 
     static void GenerateAnimClips(ImportContext ctx) {
-        Directory.CreateDirectory(ctx.animClipDirectory);       
-        var fileNamePrefix = ctx.animClipDirectory + '/' + ctx.settings.baseName; 
-
-        string childPath = ctx.settings.spriteTarget;
+        string childPath = ctx.settings.targetChildObject;
 
         // Generate one animation for each tag
         foreach (var tag in ctx.file.frameTags) {
-            var clipPath = fileNamePrefix + '_' + tag.name + ".anim";
-            AnimationClip clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
-
-            // Create clip
-            if (!clip) {
-                clip = new AnimationClip();
-                AssetDatabase.CreateAsset(clip, clipPath);
-            } else {
-                AnimationUtility.SetAnimationEvents(clip, new AnimationEvent[0]);
-            }
+            var clip = new AnimationClip();
+            clip.name = ctx.mainName + "_clip_" + tag.name;
 
             // Set loop property
             var loop = tag.properties.Contains("loop");
@@ -243,43 +228,41 @@ public static class ASEImportProcess {
             }
             AnimationUtility.SetAnimationClipSettings(clip, settings);
 
-            EditorUtility.SetDirty(clip);
-            ctx.generatedClips.Add(tag, clip);
+            ctx.output.generatedClips.Add(tag, clip);
         }
 
         // Generate main image
-        GenerateClipImageLayer(ctx, childPath, ctx.generatedSprites);
+        GenerateClipImageLayer(ctx, childPath, ctx.output.generatedSprites);
     }
 
     static void GenerateAnimController(ImportContext ctx) {
-        if (string.IsNullOrEmpty(ctx.animControllerPath)) {
-            // Debug.LogWarning("No animator controller specified. Controller generation will be ignored");
-            return;
-        }
-
-        var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ctx.animControllerPath);
-        if (!controller) {
-            controller = AnimatorController.CreateAnimatorControllerAtPath(ctx.animControllerPath);
-        }
-
-        var layer = controller.layers[0];
-        var stateMap = new Dictionary<string, AnimatorState>();
-        PopulateStateTable(stateMap, layer.stateMachine);
-        
-        foreach (var pair in ctx.generatedClips) {
-            var frameTag = pair.Key;
-            var clip = pair.Value;
-
-            AnimatorState st;
-            stateMap.TryGetValue(frameTag.name, out st);
-            if (!st) {
-                st = layer.stateMachine.AddState(frameTag.name);
-            }
-
-            st.motion = clip;
-        }
-
-        EditorUtility.SetDirty(controller);
+        // Functionality disabled for now
+        // if (!ctx.settings.createController) {
+        //     return;
+        // }
+        //
+        // var controller = new AnimatorController();
+        // controller.name = ctx.mainName + "_controller";
+        // var layer = new AnimatorControllerLayer();
+        // layer.name = "Default Layer";
+        // layer.stateMachine = new AnimatorStateMachine();
+        // controller.layers = new[] { layer };
+        //
+        // var stateMap = new Dictionary<string, AnimatorState>();
+        // PopulateStateTable(stateMap, layer.stateMachine);
+        //
+        // foreach (var pair in ctx.output.generatedClips) {
+        //     var frameTag = pair.Key;
+        //     var clip = pair.Value;
+        //
+        //     AnimatorState st;
+        //     stateMap.TryGetValue(frameTag.name, out st);
+        //     if (!st) {
+        //         st = layer.stateMachine.AddState(frameTag.name);
+        //     }
+        //
+        //     st.motion = clip;
+        // }
     }
 
     static void PopulateStateTable(Dictionary<string, AnimatorState> table, AnimatorStateMachine machine) {

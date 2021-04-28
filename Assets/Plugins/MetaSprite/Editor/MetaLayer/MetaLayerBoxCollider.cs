@@ -56,8 +56,8 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
                     var texSize = new Vector2(maxx - minx, maxy - miny);
 
                     var pivot = Vector2.Scale(ctx.settings.PivotRelativePos, new Vector2(ctx.file.width, ctx.file.height));
-                    var posWorld = (texCenter - pivot) / ctx.settings.ppu;
-                    var sizeWorld = texSize / ctx.settings.ppu;
+                    var posWorld = (texCenter - pivot) / ctx.settings.pixelPerUnit;
+                    var sizeWorld = texSize / ctx.settings.pixelPerUnit;
 
                     frameRects.Add(new Rect(posWorld, sizeWorld));
                 }
@@ -65,7 +65,7 @@ public class MetaLayerBoxCollider : MetaLayerProcessor {
         }
 
         foreach (var frameTag in ctx.file.frameTags) {
-            var clip = ctx.generatedClips[frameTag];
+            var clip = ctx.output.generatedClips[frameTag];
 
             AnimationCurve 
                 curveOffX = new AnimationCurve(),
