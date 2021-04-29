@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEditor;
 using System.IO;
+using UnityEditor.Animations;
 using UnityEngine.Serialization;
 
 namespace MetaSprite {
@@ -16,12 +17,13 @@ public class ASEImportSettings {
 
     public SpriteAlignment alignment;
 
-    [Tooltip("Only applied if alignment is Custom.")]
     public Vector2 customPivot;
 
     public bool densePack = true;
 
     public int border = 3;
+
+    public AnimatorController outputController;
 
     public Vector2 PivotRelativePos {
         get {

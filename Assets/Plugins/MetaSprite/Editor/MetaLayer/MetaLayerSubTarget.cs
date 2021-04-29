@@ -22,16 +22,14 @@ public class MetaLayerSubTarget : MetaLayerProcessor {
     }
 
     public override void Process(ImportContext context, Layer layer) {
-        // string subImageName = layer.GetParamString(0);
-        // string targetChildObject = layer.GetParamString(1);
-        //
-        // List<Layer> layers; 
-        // context.subImageLayers.TryGetValue(subImageName, out layers);
-        //
-        // var sprites = AtlasGenerator.GenerateAtlas(context, layers,
-        //     Path.GetDirectoryName(context.atlasPath) + "/" + 
-        //         context.fileNameNoExt + "_" + subImageName + ".png");
-        // ASEImportProcess.GenerateClipImageLayer(context, targetChildObject, sprites);
+        string subImageName = layer.GetParamString(0);
+        string targetChildObject = layer.GetParamString(1);
+        
+        List<Layer> layers; 
+        context.subImageLayers.TryGetValue(subImageName, out layers);
+        
+        var atlas = AtlasGenerator.GenerateAtlas(context, layers, subImageName);
+        ASEImportProcess.GenerateClipImageLayer(context, targetChildObject, atlas.sprites);
     }
 
 }

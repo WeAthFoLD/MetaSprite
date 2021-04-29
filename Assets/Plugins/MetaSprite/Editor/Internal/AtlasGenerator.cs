@@ -23,7 +23,12 @@ public static class AtlasGenerator {
         public List<PackPos> positions;
     }
 
-    public static void GenerateAtlasAndSprites(ImportContext ctx, List<Layer> layers) {
+    public static GeneratedAtlas GenerateAtlas(ImportContext ctx, List<Layer> layers, string name) {
+        var ret = new GeneratedAtlas {
+            name = name,
+            sprites = new List<Sprite>(),
+            spriteCropPositions = new List<Vector2>()
+        };
         var file = ctx.file;
         var settings = ctx.settings;
 
@@ -124,12 +129,14 @@ public static class AtlasGenerator {
             var sprite = Sprite.Create(texture, rect, pivot, settings.pixelPerUnit);
             sprite.name = ctx.mainName + "_spr_" + i;
             
-            ctx.output.generatedSprites.Add(sprite);
-            ctx.spriteCropPositions.Add(new Vector2(image.minx, file.height - image.maxy - 1));
+            ret.sprites.Add(sprite);
+            ret.spriteCropPositions.Add(new Vector2(image.minx, file.height - image.maxy - 1));
         }
 
         texture.Apply();
-        ctx.output.generatedAtlas = texture;
+        ret.texture = texture;
+
+        return ret;
     }
 
     /// Pack the atlas
