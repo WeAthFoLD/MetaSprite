@@ -53,17 +53,33 @@ public class ImportOutput {
     }
 }
 
+public enum ImportType {
+    Direct,
+    SharedSettings,
+    Ignored
+}
+
 [ScriptedImporter(1, new[] { "ase", "aseprite" })]
 public class ASEImporter : ScriptedImporter {
 
-    public bool importDirectly = true;
+    public ImportType importType = ImportType.Direct;
     public ASEImportSettings settings = new ASEImportSettings();
+    public SharedASEImportSettings sharedSettings;
 
     public override void OnImportAsset(AssetImportContext ctx) {
-        if (!importDirectly)
+        if (importType == ImportType.Ignored)
+            return;
+
+        ASEImportSettings realSettings;
+        if (importType == ImportType.Direct)
+            realSettings = settings;
+        else
+            realSettings = sharedSettings ? sharedSettings.settings : null;
+
+        if (realSettings == null)
             return;
         
-        var output = ASEImportProcess.Import(ctx.assetPath, settings);
+        var output = ASEImportProcess.Import(ctx.assetPath, realSettings);
 
         foreach (var atlas in output.generatedAtlasList) {
             bool isMain = atlas.name == GeneratedAtlas.MainAtlasName;

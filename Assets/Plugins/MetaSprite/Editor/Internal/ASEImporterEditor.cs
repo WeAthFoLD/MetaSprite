@@ -37,11 +37,14 @@ namespace MetaSprite.Internal {
             serializedObject.Update();
             
             EditorGUILayout.PropertyField(
-                serializedObject.FindProperty("importDirectly"), 
-                new GUIContent("Import Directly"));
-            if (importer.importDirectly) {
+                serializedObject.FindProperty("importType"), 
+                new GUIContent("Import Type"));
+            if (importer.importType == ImportType.Direct) {
                 var settingsProperty = serializedObject.FindProperty("settings");
                 ImportSettingsEditor.Inspect(settingsProperty);
+            }
+            else if (importer.importType == ImportType.SharedSettings) {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty("sharedSettings"));
             }
             
             serializedObject.ApplyModifiedProperties();
