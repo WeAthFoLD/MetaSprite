@@ -30,6 +30,7 @@ namespace MetaSprite.Internal {
     }
 
     [CustomEditor(typeof(ASEImporter))]
+    [CanEditMultipleObjects]
     public class ASEImporterEditor : ScriptedImporterEditor {
         public override void OnInspectorGUI() {
             var importer = (ASEImporter) target;

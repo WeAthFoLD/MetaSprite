@@ -56,6 +56,7 @@ public class MetaLayerPivot : MetaLayerProcessor {
             return;
 
         // Modify pivot for each and every atlas sprites
+        var spriteRetargetDict = new Dictionary<Sprite, Sprite>();
         foreach (var atlas in ctx.output.generatedAtlasList) {
             var sprites = atlas.sprites;
             for (int i = 0; i < sprites.Count; ++i) {
@@ -68,8 +69,26 @@ public class MetaLayerPivot : MetaLayerProcessor {
 
                 var oldSprite = sprites[i];
                 var newSprite = Sprite.Create(oldSprite.texture, oldSprite.rect, pivot, oldSprite.pixelsPerUnit);
-                Object.DestroyImmediate(oldSprite);
+                newSprite.name = oldSprite.name;
+                // Object.DestroyImmediate(oldSprite);
                 sprites[i] = newSprite;
+
+                spriteRetargetDict.Add(oldSprite, newSprite);
+            }
+        }
+
+        foreach (var clip in ctx.output.generatedClips.Values) {
+            foreach (var curveBinding in AnimationUtility.GetObjectReferenceCurveBindings(clip)) {
+                if (curveBinding.type == typeof(SpriteRenderer) &&
+                    curveBinding.propertyName == "m_Sprite") {
+                    var keyFrames = AnimationUtility.GetObjectReferenceCurve(clip, curveBinding);
+                    for (int i = 0; i < keyFrames.Length; ++i) {
+                        if (spriteRetargetDict.TryGetValue((Sprite) keyFrames[i].value, out var replaceSprite)) {
+                            keyFrames[i].value = replaceSprite;
+                        }
+                    }
+                    AnimationUtility.SetObjectReferenceCurve(clip, curveBinding, keyFrames);
+                }
             }
         }
     }

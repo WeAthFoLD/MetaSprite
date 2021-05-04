@@ -81,6 +81,17 @@ public class ASEImporter : ScriptedImporter {
         
         var output = ASEImportProcess.Import(ctx.assetPath, realSettings);
 
+        var metadata = ScriptableObject.CreateInstance<ASEAssetMetadata>();
+        metadata.name = Path.GetFileName(ctx.assetPath) + " Info";
+        metadata.clips = output.generatedClips
+            .Select(entry => new ClipMetadata {
+                clipName = entry.Key.name,
+                clip = entry.Value
+            })
+            .ToArray();
+
+        ctx.AddObjectToAsset("_metadata", metadata);
+
         foreach (var atlas in output.generatedAtlasList) {
             bool isMain = atlas.name == GeneratedAtlas.MainAtlasName;
             
@@ -100,6 +111,13 @@ public class ASEImporter : ScriptedImporter {
         foreach (var entry in output.generatedClips) {
             ctx.AddObjectToAsset(entry.Key.name, entry.Value);
         }
+
+        if (realSettings.outputController) {
+            ASEImportProcess.QueueAnimControllerImport(new ASEImportProcess.AnimControllerImportInfo {
+                controller = realSettings.outputController,
+                assetPath = ctx.assetPath
+            });
+        }
     }
 }
 
@@ -111,7 +129,6 @@ public static class ASEImportProcess {
         LoadFile,
         GenerateAtlas,
         GenerateClips,
-        GenerateController,
         InvokeMetaLayerProcessor
     }
 
@@ -157,6 +174,13 @@ public static class ASEImportProcess {
         public MetaLayerProcessor processor;
     }
 
+    internal static void QueueAnimControllerImport(AnimControllerImportInfo info) {
+        _animControllerProcessQueue.Enqueue(info);
+        if (_animControllerProcessQueue.Count == 1) {
+            EditorApplication.update += _delegateProcessAnimController;
+        }
+    }
+
     public static ImportOutput Import(string path, ASEImportSettings settings) {
         _CheckStartup();
 
@@ -179,9 +203,6 @@ public static class ASEImportProcess {
 
             ImportStage(context, Stage.GenerateClips);
             GenerateAnimClips(context);
-
-            ImportStage(context, Stage.GenerateController);
-            GenerateAnimController(context);
 
             ImportStage(context, Stage.InvokeMetaLayerProcessor);
             context.file.layers
@@ -279,30 +300,27 @@ public static class ASEImportProcess {
         GenerateClipImageLayer(ctx, childPath, ctx.output.mainAtlas.sprites);
     }
 
-    static void GenerateAnimController(ImportContext ctx) {
-        if (!ctx.settings.outputController) {
-            return;
-        }
-        
-        var controller = ctx.settings.outputController;
+    static void GenerateAnimController(AnimControllerImportInfo info) {
+        var controller = info.controller;
         var layer = controller.layers[0];
-        
+
         var stateMap = new Dictionary<string, AnimatorState>();
         PopulateStateTable(stateMap, layer.stateMachine);
-        
-        foreach (var pair in ctx.output.generatedClips) {
-            var frameTag = pair.Key;
-            var clip = pair.Value;
-        
+
+        var metadata = AssetDatabase.LoadAssetAtPath<ASEAssetMetadata>(info.assetPath);
+        foreach (var clipInfo in metadata.clips) {
+            var clipName = clipInfo.clipName;
+            var clip = clipInfo.clip;
+
             AnimatorState st;
-            stateMap.TryGetValue(frameTag.name, out st);
+            stateMap.TryGetValue(clipName, out st);
             if (!st) {
-                st = layer.stateMachine.AddState(frameTag.name);
+                st = layer.stateMachine.AddState(clipName);
             }
-        
+
             st.motion = clip;
         }
-        
+
         EditorUtility.SetDirty(controller);
     }
 
@@ -320,6 +338,24 @@ public static class ASEImportProcess {
             PopulateStateTable(table, subMachine.stateMachine);
         }
     }
+
+    private static void _DelayProcessAnimController() {
+        while (_animControllerProcessQueue.Count > 0) {
+            var item = _animControllerProcessQueue.Dequeue();
+            GenerateAnimController(item);
+        }
+
+        AssetDatabase.SaveAssets();
+        EditorApplication.update -= _delegateProcessAnimController;
+    }
+
+    internal class AnimControllerImportInfo {
+        public string assetPath;
+        public AnimatorController controller;
+    }
+
+    private static readonly EditorApplication.CallbackFunction _delegateProcessAnimController = _DelayProcessAnimController;
+    private static readonly Queue<AnimControllerImportInfo> _animControllerProcessQueue = new Queue<AnimControllerImportInfo>();
 
 }
 
